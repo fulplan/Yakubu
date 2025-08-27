@@ -277,61 +277,95 @@ export default function Dashboard() {
 
   // Mobile Bottom Navigation Component
   const MobileBottomNav = () => (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 md:hidden">
-      <div className="grid grid-cols-5 px-2 py-2">
+    <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 md:hidden shadow-lg">
+      <div className="grid grid-cols-5 px-1 py-3 safe-area-inset-bottom">
         {[
-          { id: 'portfolio', icon: Home, label: 'Portfolio' },
-          { id: 'consignments', icon: Package, label: 'Consignments' },
-          { id: 'certificates', icon: FileText, label: 'Certificates' },
-          { id: 'inheritance', icon: Shield, label: 'Inheritance' },
-          { id: 'tracking', icon: ExternalLink, label: 'Tracking' }
-        ].map(({ id, icon: Icon, label }) => (
+          { id: 'portfolio', icon: Home, label: 'Portfolio', shortLabel: 'Home' },
+          { id: 'consignments', icon: Package, label: 'Consignments', shortLabel: 'Assets' },
+          { id: 'certificates', icon: FileText, label: 'Certificates', shortLabel: 'Docs' },
+          { id: 'inheritance', icon: Shield, label: 'Inheritance', shortLabel: 'Will' },
+          { id: 'tracking', icon: ExternalLink, label: 'Tracking', shortLabel: 'Track' }
+        ].map(({ id, icon: Icon, label, shortLabel }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex flex-col items-center justify-center py-2 px-1 min-h-[60px] transition-colors ${
+            className={`flex flex-col items-center justify-center py-2 px-1 min-h-[64px] transition-all duration-200 rounded-lg mx-1 ${
               activeTab === id 
-                ? 'text-primary' 
-                : 'text-muted-foreground'
+                ? 'text-primary bg-primary/10' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             data-testid={`bottom-nav-${id}`}
+            aria-label={label}
           >
-            <Icon className="h-5 w-5 mb-1" />
-            <span className="text-xs font-medium">{label}</span>
+            <Icon className={`h-6 w-6 mb-1 ${activeTab === id ? 'scale-110' : ''} transition-transform`} />
+            <span className="text-[10px] font-medium leading-tight text-center max-w-[60px] truncate">
+              {shortLabel}
+            </span>
           </button>
         ))}
       </div>
     </div>
   );
 
-  // Mobile Top Navigation Component
-  const MobileTopNav = () => (
-    <div className="bg-background border-b border-border sticky top-0 z-40 md:hidden">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center">
-          <Shield className="h-6 w-6 text-primary mr-2" />
-          <span className="text-lg font-serif font-bold text-primary">GoldVault</span>
-        </div>
-        <div className="flex items-center space-x-3">
-          <span className="text-sm font-medium text-muted-foreground truncate max-w-[100px]">
-            {user?.firstName || user?.email?.split('@')[0] || 'User'}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="p-2 h-8 w-8"
-            data-testid="mobile-logout"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+  // Mobile Top Navigation Component with Back Navigation
+  const MobileTopNav = () => {
+    const getPageTitle = () => {
+      switch (activeTab) {
+        case 'portfolio': return 'Portfolio';
+        case 'consignments': return 'My Assets';
+        case 'certificates': return 'Documents';
+        case 'inheritance': return 'Digital Will';
+        case 'tracking': return 'Tracking';
+        default: return 'Dashboard';
+      }
+    };
+
+    return (
+      <div className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-40 md:hidden">
+        <div className="flex items-center justify-between px-4 py-3 min-h-[56px]">
+          <div className="flex items-center space-x-3">
+            {activeTab !== 'portfolio' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveTab('portfolio')}
+                className="p-1 h-8 w-8"
+                data-testid="mobile-back"
+                aria-label="Go back to Portfolio"
+              >
+                <ExternalLink className="h-4 w-4 rotate-180" />
+              </Button>
+            )}
+            <div className="flex items-center">
+              <Shield className="h-5 w-5 text-primary mr-2" />
+              <div>
+                <span className="text-base font-serif font-bold text-primary">GoldVault</span>
+                <p className="text-xs text-muted-foreground leading-none">{getPageTitle()}</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-medium text-muted-foreground truncate max-w-[80px]">
+              {user?.firstName || user?.email?.split('@')[0] || 'User'}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="p-1.5 h-8 w-8"
+              data-testid="mobile-logout"
+              aria-label="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen bg-background pb-24 md:pb-0">
       {/* Desktop Navigation */}
       <div className="hidden md:block">
         <Navigation 
@@ -345,7 +379,7 @@ export default function Dashboard() {
       {/* Mobile Top Navigation */}
       <MobileTopNav />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8" data-testid="dashboard-page">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 md:py-8" data-testid="dashboard-page">
         {/* Header - Desktop Only */}
         <div className="mb-8 hidden md:block">
           <h1 className="text-4xl font-serif font-bold mb-4">Portfolio Dashboard</h1>
