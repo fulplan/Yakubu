@@ -131,34 +131,34 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       {/* Left side - Auth form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+        <div className="w-full max-w-md space-y-4 md:space-y-8">
           <div className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <Shield className="h-12 w-12 text-primary" />
+            <div className="flex items-center justify-center mb-3 md:mb-4">
+              <Shield className="h-8 w-8 md:h-12 md:w-12 text-primary" />
             </div>
-            <h2 className="text-3xl font-bold text-foreground">GoldVault Pro</h2>
-            <p className="text-muted-foreground mt-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">GoldVault Pro</h2>
+            <p className="text-sm md:text-base text-muted-foreground mt-2">
               {isLogin ? "Sign in to your account" : "Create your account"}
             </p>
           </div>
 
           <Card data-testid="auth-card">
-            <CardHeader>
-              <CardTitle>{isLogin ? "Sign In" : "Create Account"}</CardTitle>
-              <CardDescription>
+            <CardHeader className="pb-4 md:pb-6">
+              <CardTitle className="text-lg md:text-xl">{isLogin ? "Sign In" : "Create Account"}</CardTitle>
+              <CardDescription className="text-sm">
                 {isLogin 
                   ? "Enter your credentials to access your gold portfolio" 
                   : "Join thousands of investors securing their gold assets"
                 }
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {isLogin ? (
                 <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4" data-testid="login-form">
+                  <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-3 md:space-y-4" data-testid="login-form">
                     <FormField
                       control={loginForm.control}
                       name="email"
@@ -185,7 +185,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={loginMutation.isPending} data-testid="button-login">
+                    <Button type="submit" className="w-full min-h-[44px] mt-4 md:mt-6" disabled={loginMutation.isPending} data-testid="button-login">
                       {loginMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Sign In
                     </Button>
@@ -193,7 +193,7 @@ export default function AuthPage() {
                 </Form>
               ) : (
                 <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4" data-testid="register-form">
+                  <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-3 md:space-y-4" data-testid="register-form">
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={registerForm.control}
@@ -248,7 +248,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={registerMutation.isPending} data-testid="button-register">
+                    <Button type="submit" className="w-full min-h-[44px] mt-4 md:mt-6" disabled={registerMutation.isPending} data-testid="button-register">
                       {registerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Create Account
                     </Button>
@@ -256,11 +256,11 @@ export default function AuthPage() {
                 </Form>
               )}
 
-              <div className="mt-4 text-center">
+              <div className="mt-3 md:mt-4 text-center">
                 <Button
                   variant="link"
                   onClick={() => setIsLogin(!isLogin)}
-                  className="text-sm text-muted-foreground"
+                  className="text-xs md:text-sm text-muted-foreground min-h-[44px]"
                   data-testid="button-toggle-auth"
                 >
                   {isLogin 
@@ -275,7 +275,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero section */}
-      <div className="flex-1 bg-primary text-primary-foreground p-8 flex items-center">
+      <div className="hidden lg:flex flex-1 bg-primary text-primary-foreground p-8 items-center">
         <div className="space-y-8">
           <div>
             <h1 className="text-4xl font-bold mb-4">Secure Your Gold Assets</h1>
