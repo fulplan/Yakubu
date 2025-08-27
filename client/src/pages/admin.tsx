@@ -42,6 +42,11 @@ function UserManagement() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [creditDebitDialogOpen, setCreditDebitDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [transactionType, setTransactionType] = useState<'credit' | 'debit'>('credit');
+  const [transactionAmount, setTransactionAmount] = useState('');
+  const [transactionDescription, setTransactionDescription] = useState('');
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -123,6 +128,30 @@ function UserManagement() {
     },
   });
 
+  // Credit/debit account mutation
+  const accountTransactionMutation = useMutation({
+    mutationFn: async ({ userId, type, amount, description }: { userId: string; type: 'credit' | 'debit'; amount: number; description: string }) => {
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/${type}`, { amount, description });
+      return response.json();
+    },
+    onSuccess: (_, { type }) => {
+      toast({
+        title: "Transaction Successful",
+        description: `Account ${type} completed successfully.`,
+      });
+      setCreditDebitDialogOpen(false);
+      setTransactionAmount('');
+      setTransactionDescription('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Transaction Failed",
+        description: error.message || "An error occurred during the transaction.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateUser = () => {
     if (!newUser.email || !newUser.password || !newUser.firstName || !newUser.lastName) {
       toast({
@@ -143,6 +172,25 @@ function UserManagement() {
     if (confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       deleteUserMutation.mutate(userId);
     }
+  };
+
+  const handleCreditDebit = () => {
+    const amount = parseFloat(transactionAmount);
+    if (!amount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    accountTransactionMutation.mutate({
+      userId: selectedUserId,
+      type: transactionType,
+      amount,
+      description: transactionDescription || `Account ${transactionType} by admin`
+    });
   };
 
   if (usersLoading) {
@@ -371,6 +419,32 @@ function UserManagement() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => {
+                          setSelectedUserId(user.id);
+                          setTransactionType('credit');
+                          setCreditDebitDialogOpen(true);
+                        }}
+                        data-testid={`button-credit-${user.id}`}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Credit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUserId(user.id);
+                          setTransactionType('debit');
+                          setCreditDebitDialogOpen(true);
+                        }}
+                        data-testid={`button-debit-${user.id}`}
+                      >
+                        <Coins className="h-4 w-4 mr-1" />
+                        Debit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleDeleteUser(user.id)}
                         disabled={deleteUserMutation.isPending}
                         data-testid={`button-delete-${user.id}`}
@@ -393,6 +467,64 @@ function UserManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Credit/Debit Dialog */}
+      <Dialog open={creditDebitDialogOpen} onOpenChange={setCreditDebitDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {transactionType === 'credit' ? 'Credit Account' : 'Debit Account'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium">Amount ($)</label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={transactionAmount}
+                onChange={(e) => setTransactionAmount(e.target.value)}
+                data-testid="input-transaction-amount"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                placeholder="Enter transaction description..."
+                value={transactionDescription}
+                onChange={(e) => setTransactionDescription(e.target.value)}
+                data-testid="textarea-transaction-description"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setCreditDebitDialogOpen(false)}
+                data-testid="button-cancel-transaction"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreditDebit}
+                disabled={accountTransactionMutation.isPending}
+                data-testid="button-confirm-transaction"
+              >
+                {accountTransactionMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {transactionType === 'credit' ? <Plus className="h-4 w-4 mr-2" /> : <Coins className="h-4 w-4 mr-2" />}
+                    {transactionType === 'credit' ? 'Credit Account' : 'Debit Account'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

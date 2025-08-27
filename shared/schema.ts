@@ -113,6 +113,17 @@ export const chatMessages = pgTable("chat_messages", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// Account transactions table for credit/debit functionality
+export const accountTransactions = pgTable("account_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // 'credit' or 'debit'
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  performedBy: varchar("performed_by").notNull().references(() => users.id), // admin who performed the action
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Storage plans table
 export const storagePlans = pgTable("storage_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -210,6 +221,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
+export const insertAccountTransactionSchema = createInsertSchema(accountTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -231,5 +247,8 @@ export type InheritanceClaim = typeof inheritanceClaims.$inferSelect;
 
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export type InsertAccountTransaction = z.infer<typeof insertAccountTransactionSchema>;
+export type AccountTransaction = typeof accountTransactions.$inferSelect;
 
 export type StoragePlan = typeof storagePlans.$inferSelect;

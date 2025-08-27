@@ -235,11 +235,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Hash password
-      const { scrypt, randomBytes } = require('crypto');
-      const { promisify } = require('util');
-      const scryptAsync = promisify(scrypt);
-      const salt = randomBytes(16).toString('hex');
-      const buf = await scryptAsync(password, salt, 64);
+      const crypto = await import('crypto');
+      const { promisify } = await import('util');
+      const scryptAsync = promisify(crypto.scrypt);
+      const salt = crypto.randomBytes(16).toString('hex');
+      const buf = await scryptAsync(password, salt, 64) as Buffer;
       const hashedPassword = `${buf.toString('hex')}.${salt}`;
 
       const user = await storage.createUser({
@@ -266,11 +266,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If password is being updated, hash it
       if (updates.password) {
-        const { scrypt, randomBytes } = require('crypto');
-        const { promisify } = require('util');
-        const scryptAsync = promisify(scrypt);
-        const salt = randomBytes(16).toString('hex');
-        const buf = await scryptAsync(updates.password, salt, 64);
+        const crypto = await import('crypto');
+        const { promisify } = await import('util');
+        const scryptAsync = promisify(crypto.scrypt);
+        const salt = crypto.randomBytes(16).toString('hex');
+        const buf = await scryptAsync(updates.password, salt, 64) as Buffer;
         updates.password = `${buf.toString('hex')}.${salt}`;
       }
 
@@ -296,6 +296,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting user:", error);
       res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Account transaction routes for credit/debit
+  app.post('/api/admin/users/:id/credit', isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const { amount, description } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Valid amount is required" });
+      }
+
+      const transaction = await storage.createAccountTransaction({
+        userId,
+        type: 'credit',
+        amount: amount.toString(),
+        description: description || 'Account credit by admin',
+        performedBy: req.user.id,
+      });
+
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error("Error crediting account:", error);
+      res.status(500).json({ message: "Failed to credit account" });
+    }
+  });
+
+  app.post('/api/admin/users/:id/debit', isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const { amount, description } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Valid amount is required" });
+      }
+
+      const transaction = await storage.createAccountTransaction({
+        userId,
+        type: 'debit',
+        amount: amount.toString(),
+        description: description || 'Account debit by admin',
+        performedBy: req.user.id,
+      });
+
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error("Error debiting account:", error);
+      res.status(500).json({ message: "Failed to debit account" });
+    }
+  });
+
+  app.get('/api/account/balance', isAuthenticated, async (req: any, res) => {
+    try {
+      const balance = await storage.getUserAccountBalance(req.user.id);
+      res.json({ balance });
+    } catch (error) {
+      console.error("Error fetching account balance:", error);
+      res.status(500).json({ message: "Failed to fetch account balance" });
+    }
+  });
+
+  app.get('/api/account/transactions', isAuthenticated, async (req: any, res) => {
+    try {
+      const transactions = await storage.getUserAccountTransactions(req.user.id);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching account transactions:", error);
+      res.status(500).json({ message: "Failed to fetch account transactions" });
     }
   });
 

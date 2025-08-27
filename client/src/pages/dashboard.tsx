@@ -28,7 +28,8 @@ import {
   TrendingUp,
   ExternalLink,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Wallet
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -73,6 +74,12 @@ export default function Dashboard() {
 
   const { data: goldPrices } = useQuery({
     queryKey: ["/api/gold-prices"],
+  });
+
+  // Fetch user account balance
+  const { data: accountBalance = { balance: 0 } } = useQuery({
+    queryKey: ["/api/account/balance"],
+    enabled: !!user,
   });
 
   // Mutations
@@ -309,6 +316,24 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Account Balance */}
+            <Card data-testid="account-balance">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Wallet className="h-5 w-5 mr-2 text-primary" />
+                  Account Balance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-4">
+                  <p className="text-3xl font-bold text-primary">
+                    ${accountBalance.balance ? accountBalance.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">Available funds</p>
                 </div>
               </CardContent>
             </Card>

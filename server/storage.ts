@@ -6,6 +6,7 @@ import {
   beneficiaries,
   inheritanceClaims,
   chatMessages,
+  accountTransactions,
   storagePlans,
   type User,
   type UpsertUser,
@@ -20,6 +21,8 @@ import {
   type InsertClaim,
   type ChatMessage,
   type InsertChatMessage,
+  type AccountTransaction,
+  type InsertAccountTransaction,
   type StoragePlan,
 } from "@shared/schema";
 import { db } from "./db";
@@ -65,6 +68,11 @@ export interface IStorage {
   // Chat operations
   saveChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(sessionId: string): Promise<ChatMessage[]>;
+  
+  // Account transaction operations
+  createAccountTransaction(transaction: InsertAccountTransaction): Promise<AccountTransaction>;
+  getUserAccountTransactions(userId: string): Promise<AccountTransaction[]>;
+  getUserAccountBalance(userId: string): Promise<number>;
   
   // Storage plans
   getStoragePlans(): Promise<StoragePlan[]>;
@@ -309,6 +317,34 @@ export class DatabaseStorage implements IStorage {
       .from(storagePlans)
       .where(and(eq(storagePlans.id, id), eq(storagePlans.active, true)));
     return plan;
+  }
+  // Account transaction operations
+  async createAccountTransaction(transaction: InsertAccountTransaction): Promise<AccountTransaction> {
+    const [accountTransaction] = await db
+      .insert(accountTransactions)
+      .values(transaction)
+      .returning();
+    return accountTransaction;
+  }
+
+  async getUserAccountTransactions(userId: string): Promise<AccountTransaction[]> {
+    return db
+      .select()
+      .from(accountTransactions)
+      .where(eq(accountTransactions.userId, userId))
+      .orderBy(desc(accountTransactions.createdAt));
+  }
+
+  async getUserAccountBalance(userId: string): Promise<number> {
+    const transactions = await this.getUserAccountTransactions(userId);
+    const balance = transactions.reduce((sum, transaction) => {
+      if (transaction.type === 'credit') {
+        return sum + parseFloat(transaction.amount);
+      } else {
+        return sum - parseFloat(transaction.amount);
+      }
+    }, 0);
+    return balance;
   }
 }
 
