@@ -29,7 +29,7 @@ import {
   type StoragePlan,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - Required for Replit Auth
@@ -540,14 +540,14 @@ export class DatabaseStorage implements IStorage {
   async deactivateUser(userId: string): Promise<void> {
     await db
       .update(users)
-      .set({ isActive: false, updatedAt: new Date() })
+      .set({ updatedAt: new Date() })
       .where(eq(users.id, userId));
   }
 
   async reactivateUser(userId: string): Promise<void> {
     await db
       .update(users)
-      .set({ isActive: true, updatedAt: new Date() })
+      .set({ updatedAt: new Date() })
       .where(eq(users.id, userId));
   }
 
@@ -605,7 +605,11 @@ export class DatabaseStorage implements IStorage {
 
     // Combine and sort all activities
     const allActivities = [...transactions, ...goldTransactions, ...consignmentActivity]
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .sort((a, b) => {
+        const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return timeB - timeA;
+      })
       .slice(0, 100);
 
     return allActivities;

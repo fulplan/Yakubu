@@ -31,7 +31,10 @@ import {
   Edit,
   Trash2,
   Save,
-  X
+  X,
+  UserCheck,
+  Settings,
+  Eye
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -65,7 +68,7 @@ function UserManagement() {
   // Fetch all users
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
-  });
+  }) as { data: any[], isLoading: boolean };
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -747,21 +750,21 @@ export default function Admin() {
   const { data: pendingClaims = [], isLoading: claimsLoading } = useQuery({
     queryKey: ["/api/admin/pending-claims"],
     enabled: !!user,
-  });
+  }) as { data: any[], isLoading: boolean };
 
   const { data: allClaims = [], isLoading: allClaimsLoading } = useQuery({
     queryKey: ["/api/admin/claims"],
     enabled: !!user,
-  });
+  }) as { data: any[], isLoading: boolean };
 
   const { data: consignments = [], isLoading: consignmentsLoading } = useQuery({
     queryKey: ["/api/admin/consignments"],
     enabled: !!user,
-  });
+  }) as { data: any[], isLoading: boolean };
 
   const { data: goldPrices } = useQuery({
     queryKey: ["/api/gold-prices"],
-  });
+  }) as { data: { usd: number } | undefined };
 
   // Enhanced claims mutations
   const assignClaimMutation = useMutation({
@@ -1575,7 +1578,7 @@ export default function Admin() {
                 <Checkbox
                   id="addToAccount"
                   checked={addToAccount}
-                  onCheckedChange={setAddToAccount}
+                  onCheckedChange={(checked) => setAddToAccount(checked === true)}
                   data-testid="checkbox-add-to-account"
                 />
                 <Label htmlFor="addToAccount" className="text-sm">
