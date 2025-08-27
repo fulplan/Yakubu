@@ -10,44 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Lock, University, Award, CheckCircle, Plus, Save, Search, QrCode, Download, Edit, Trash2, Gavel, TriangleAlert, Scroll } from "lucide-react";
+import { Shield, Lock, University, Award, CheckCircle, Search, QrCode, Download } from "lucide-react";
 
 export default function Landing() {
   const [goldPrice, setGoldPrice] = useState(2034.50);
   const [trackingId, setTrackingId] = useState("");
-  
-  // Digital will state
-  const [willData, setWillData] = useState({
-    primaryBeneficiary: "",
-    relationship: "",
-    allocation: 50,
-    instructions: "",
-  });
-
-  const [beneficiaries, setBeneficiaries] = useState([
-    {
-      name: "Sarah Johnson",
-      relationship: "Daughter", 
-      percentage: 60,
-      instructions: "To be held in trust until age 25, with annual distributions for education expenses."
-    },
-    {
-      name: "Michael Johnson",
-      relationship: "Son",
-      percentage: 40, 
-      instructions: "Equal distribution with sister, available at age 21."
-    }
-  ]);
-
-  const totalAllocation = beneficiaries.reduce((sum, b) => sum + b.percentage, 0);
 
   const handleStartConsignment = () => {
-    window.location.href = "/api/login";
+    window.location.href = "/auth";
   };
 
   const handleGetStarted = () => {
-    window.location.href = "/api/login";
+    window.location.href = "/auth";
   };
 
   const handleTrackConsignment = () => {
@@ -62,8 +36,8 @@ export default function Landing() {
       {/* Navigation */}
       <Navigation 
         goldPrice={goldPrice}
-        onLogin={() => window.location.href = "/api/login"}
-        onRegister={() => window.location.href = "/api/login"}
+        onLogin={() => window.location.href = "/auth"}
+        onRegister={() => window.location.href = "/auth"}
       />
 
       {/* Hero Carousel */}
@@ -227,76 +201,33 @@ export default function Landing() {
       {/* Pricing Calculator */}
       <PricingCalculator onGetQuote={handleGetStarted} />
 
-      {/* User Dashboard Preview */}
-      <section className="py-20 bg-muted" data-testid="dashboard-preview">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">Your Gold Portfolio Dashboard</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Monitor your gold investments, track storage, and manage your digital assets from one secure platform
-            </p>
+      {/* Call to Action */}
+      <section className="py-20 bg-primary text-primary-foreground" data-testid="cta-section">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">Ready to Secure Your Gold?</h2>
+          <p className="text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
+            Join thousands of investors who trust GoldVault Pro with their precious metals storage and inheritance planning.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              size="lg" 
+              variant="secondary" 
+              className="text-lg px-8 py-3"
+              onClick={handleGetStarted}
+              data-testid="button-get-started-cta"
+            >
+              Get Started Today
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="text-lg px-8 py-3 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+              data-testid="button-view-pricing-cta"
+            >
+              View Pricing
+            </Button>
           </div>
-          
-          <Card className="overflow-hidden" data-testid="dashboard-demo">
-            <div className="bg-primary text-primary-foreground p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold">Welcome back, John Smith</h3>
-                  <p className="text-primary-foreground/80">Portfolio Overview</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold">$127,450</div>
-                  <div className="text-sm text-primary-foreground/80">Total Portfolio Value</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <Card className="p-6">
-                  <h4 className="font-semibold mb-4 flex items-center">
-                    <span className="text-2xl text-primary mr-3">🪙</span>
-                    Gold Holdings
-                  </h4>
-                  <div className="text-2xl font-bold mb-2">62.5 oz</div>
-                  <div className="text-sm text-muted-foreground">Current Weight</div>
-                </Card>
-                
-                <Card className="p-6">
-                  <h4 className="font-semibold mb-4 flex items-center">
-                    <span className="text-2xl text-primary mr-3">📈</span>
-                    Performance
-                  </h4>
-                  <div className="text-2xl font-bold mb-2 text-green-600">+12.8%</div>
-                  <div className="text-sm text-muted-foreground">This Year</div>
-                </Card>
-                
-                <Card className="p-6">
-                  <h4 className="font-semibold mb-4 flex items-center">
-                    <span className="text-2xl text-primary mr-3">📅</span>
-                    Storage
-                  </h4>
-                  <div className="text-2xl font-bold mb-2">287 days</div>
-                  <div className="text-sm text-muted-foreground">Until Renewal</div>
-                </Card>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button className="flex items-center justify-center" onClick={handleGetStarted} data-testid="button-add-gold">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Gold
-                </Button>
-                <Button variant="outline" className="flex items-center justify-center" onClick={handleGetStarted} data-testid="button-view-certificates">
-                  <Award className="h-4 w-4 mr-2" />
-                  View Certificates
-                </Button>
-                <Button variant="outline" className="flex items-center justify-center" onClick={handleGetStarted} data-testid="button-manage-will">
-                  <Scroll className="h-4 w-4 mr-2" />
-                  Manage Will
-                </Button>
-              </div>
-            </div>
-          </Card>
         </div>
       </section>
 
@@ -414,257 +345,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Digital Will Interface */}
-      <section className="py-20 bg-muted" data-testid="digital-will-section">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">Digital Inheritance Planning</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Secure your family's future with our comprehensive digital will and inheritance management system
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Will Builder */}
-            <Card className="p-8" data-testid="will-builder">
-              <h3 className="text-2xl font-bold mb-6">Digital Will Builder</h3>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Primary Beneficiary</label>
-                  <Input
-                    type="text"
-                    placeholder="Full legal name"
-                    value={willData.primaryBeneficiary}
-                    onChange={(e) => setWillData({ ...willData, primaryBeneficiary: e.target.value })}
-                    data-testid="input-beneficiary-name"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Relationship</label>
-                  <Select value={willData.relationship} onValueChange={(value) => setWillData({ ...willData, relationship: value })}>
-                    <SelectTrigger data-testid="select-relationship">
-                      <SelectValue placeholder="Select relationship" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="spouse">Spouse</SelectItem>
-                      <SelectItem value="child">Child</SelectItem>
-                      <SelectItem value="parent">Parent</SelectItem>
-                      <SelectItem value="sibling">Sibling</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Gold Allocation (%)</label>
-                  <Input
-                    type="number"
-                    placeholder="50"
-                    min="1"
-                    max="100"
-                    value={willData.allocation}
-                    onChange={(e) => setWillData({ ...willData, allocation: parseInt(e.target.value) || 0 })}
-                    data-testid="input-allocation"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Special Instructions</label>
-                  <Textarea
-                    rows={4}
-                    placeholder="Any specific instructions for this inheritance..."
-                    value={willData.instructions}
-                    onChange={(e) => setWillData({ ...willData, instructions: e.target.value })}
-                    className="resize-none"
-                    data-testid="textarea-instructions"
-                  />
-                </div>
-                
-                <Button variant="outline" className="w-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground" onClick={handleGetStarted} data-testid="button-add-beneficiary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Another Beneficiary
-                </Button>
-              </div>
-            </Card>
-            
-            {/* Current Beneficiaries */}
-            <Card className="p-8" data-testid="current-beneficiaries">
-              <h3 className="text-2xl font-bold mb-6">Current Beneficiaries</h3>
-              
-              <div className="space-y-4">
-                {beneficiaries.map((beneficiary, index) => (
-                  <div key={index} className="p-4 bg-muted rounded-lg" data-testid={`beneficiary-${index}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">{beneficiary.name}</h4>
-                      <span className="text-sm text-muted-foreground">{beneficiary.relationship}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-primary">{beneficiary.percentage}%</span>
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm" onClick={handleGetStarted} data-testid={`button-edit-beneficiary-${index}`}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={handleGetStarted} data-testid={`button-delete-beneficiary-${index}`}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">{beneficiary.instructions}</p>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-8 p-4 bg-primary/10 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">Total Allocated:</span>
-                  <span className="text-xl font-bold text-primary">{totalAllocation}%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">Will Status:</span>
-                  <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Complete</span>
-                </div>
-              </div>
-              
-              <Button className="w-full mt-6" onClick={handleGetStarted} data-testid="button-save-will">
-                <Save className="h-4 w-4 mr-2" />
-                Save Digital Will
-              </Button>
-            </Card>
-          </div>
-        </div>
-      </section>
 
-      {/* Admin Dashboard Preview */}
-      <section className="py-20 bg-background" data-testid="admin-dashboard-section">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">Admin Management Center</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Comprehensive administration tools for managing consignments, claims, and customer support
-            </p>
-          </div>
-          
-          <Card className="mb-8" data-testid="admin-dashboard-preview">
-            <div className="flex flex-wrap border-b border-border">
-              <Button variant="ghost" className="px-6 py-4 font-medium text-primary border-b-2 border-primary" data-testid="tab-overview">
-                Overview
-              </Button>
-              <Button variant="ghost" className="px-6 py-4 font-medium text-muted-foreground hover:text-foreground" data-testid="tab-consignments">
-                Consignments
-              </Button>
-              <Button variant="ghost" className="px-6 py-4 font-medium text-muted-foreground hover:text-foreground" data-testid="tab-claims">
-                Claims
-              </Button>
-              <Button variant="ghost" className="px-6 py-4 font-medium text-muted-foreground hover:text-foreground" data-testid="tab-support">
-                Support
-              </Button>
-              <Button variant="ghost" className="px-6 py-4 font-medium text-muted-foreground hover:text-foreground" data-testid="tab-analytics">
-                Analytics
-              </Button>
-            </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <Card className="p-6" data-testid="stat-active-consignments">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Active Consignments</p>
-                      <p className="text-2xl font-bold">1,247</p>
-                    </div>
-                    <span className="text-2xl text-primary">📦</span>
-                  </div>
-                </Card>
-                
-                <Card className="p-6" data-testid="stat-pending-claims">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pending Claims</p>
-                      <p className="text-2xl font-bold">23</p>
-                    </div>
-                    <Gavel className="h-8 w-8 text-primary" />
-                  </div>
-                </Card>
-                
-                <Card className="p-6" data-testid="stat-total-gold">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Gold (oz)</p>
-                      <p className="text-2xl font-bold">15,382</p>
-                    </div>
-                    <span className="text-2xl text-primary">🪙</span>
-                  </div>
-                </Card>
-                
-                <Card className="p-6" data-testid="stat-portfolio-value">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Portfolio Value</p>
-                      <p className="text-2xl font-bold">$31.3M</p>
-                    </div>
-                    <span className="text-2xl text-primary">📈</span>
-                  </div>
-                </Card>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">Recent Consignments</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg" data-testid="recent-consignment-1">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center mr-3">
-                          <Plus className="h-5 w-5 text-primary-foreground" />
-                        </div>
-                        <div>
-                          <p className="font-medium">GV-2024-001250</p>
-                          <p className="text-sm text-muted-foreground">5.2 oz Gold Bars</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">$10,580</p>
-                        <p className="text-sm text-green-600">Verified</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">Pending Actions</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg" data-testid="pending-action-kyc">
-                      <div className="flex items-center">
-                        <TriangleAlert className="h-5 w-5 text-yellow-600 mr-3" />
-                        <div>
-                          <p className="font-medium">KYC Review Required</p>
-                          <p className="text-sm text-muted-foreground">Customer ID: CU-2024-4821</p>
-                        </div>
-                      </div>
-                      <Button size="sm" onClick={handleGetStarted} data-testid="button-review-kyc">
-                        Review
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg" data-testid="pending-action-claim">
-                      <div className="flex items-center">
-                        <Scroll className="h-5 w-5 text-blue-600 mr-3" />
-                        <div>
-                          <p className="font-medium">Inheritance Claim</p>
-                          <p className="text-sm text-muted-foreground">Claim ID: CL-2024-0089</p>
-                        </div>
-                      </div>
-                      <Button size="sm" onClick={handleGetStarted} data-testid="button-review-claim">
-                        Review
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </section>
 
       {/* Chat Support */}
       <ChatSupport />

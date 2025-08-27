@@ -29,6 +29,8 @@ export interface IStorage {
   // User operations - Required for Replit Auth
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  createUser(userData: Omit<UpsertUser, 'id'>): Promise<User>;
+  getUserByEmail(email: string): Promise<User | null>;
   
   // Consignment operations
   createConsignment(consignment: InsertConsignment): Promise<Consignment>;
@@ -86,6 +88,23 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async createUser(userData: Omit<UpsertUser, 'id'>): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .returning();
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    return user || null;
   }
 
   // Consignment operations

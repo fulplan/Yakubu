@@ -11,6 +11,7 @@ import Consignment from "@/pages/consignment";
 import Tracking from "@/pages/tracking";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
+import AuthPage from "@/pages/auth-page";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -20,6 +21,7 @@ function Router() {
       {isLoading || !isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
+          <Route path="/auth" component={AuthPage} />
           <Route path="/tracking" component={Tracking} />
           <Route path="/tracking/:consignmentNumber" component={Tracking} />
         </>
