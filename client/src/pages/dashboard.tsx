@@ -29,7 +29,8 @@ import {
   ExternalLink,
   AlertCircle,
   CheckCircle,
-  Wallet
+  Wallet,
+  Package
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -278,12 +279,47 @@ export default function Dashboard() {
         </div>
 
         <Tabs defaultValue="portfolio" className="space-y-8" data-testid="dashboard-tabs">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="portfolio" data-testid="tab-portfolio">Portfolio</TabsTrigger>
-            <TabsTrigger value="consignments" data-testid="tab-consignments">Consignments</TabsTrigger>
-            <TabsTrigger value="certificates" data-testid="tab-certificates">Certificates</TabsTrigger>
-            <TabsTrigger value="inheritance" data-testid="tab-inheritance">Inheritance</TabsTrigger>
-            <TabsTrigger value="tracking" data-testid="tab-tracking">Tracking</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2 h-auto p-2 bg-muted">
+            <TabsTrigger 
+              value="portfolio" 
+              data-testid="tab-portfolio"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <TrendingUp className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Portfolio</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="consignments" 
+              data-testid="tab-consignments"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <Package className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Consignments</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="certificates" 
+              data-testid="tab-certificates"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <FileText className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Certificates</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="inheritance" 
+              data-testid="tab-inheritance"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <Shield className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Inheritance</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="tracking" 
+              data-testid="tab-tracking"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <ExternalLink className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Tracking</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Portfolio Tab */}
@@ -297,7 +333,7 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                   <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                     <div>
                       <p className="text-sm text-muted-foreground">USD per oz</p>
@@ -353,7 +389,7 @@ export default function Dashboard() {
             </Card>
 
             {/* Portfolio Analytics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               <Card data-testid="stat-total-value">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -422,7 +458,7 @@ export default function Dashboard() {
             </div>
 
             {/* Real-time Portfolio Performance */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               <Card data-testid="performance-metrics">
                 <CardHeader>
                   <CardTitle>Portfolio Performance</CardTitle>
@@ -534,7 +570,11 @@ export default function Dashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Your Gold Consignments</CardTitle>
-                <Button onClick={() => window.location.href = "/consignment"} data-testid="button-new-consignment">
+                <Button 
+                  onClick={() => window.location.href = "/consignment"} 
+                  data-testid="button-new-consignment"
+                  className="min-h-[44px] px-6 text-sm md:text-base touch-manipulation"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   New Consignment
                 </Button>

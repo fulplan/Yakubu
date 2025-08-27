@@ -825,19 +825,61 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-8" data-testid="admin-tabs">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
-            <TabsTrigger value="consignments" data-testid="tab-consignments">Consignments</TabsTrigger>
-            <TabsTrigger value="claims" data-testid="tab-claims">Claims</TabsTrigger>
-            <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
-            <TabsTrigger value="support" data-testid="tab-support">Support</TabsTrigger>
-            <TabsTrigger value="analytics" data-testid="tab-analytics">Analytics</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 gap-2 h-auto p-2 bg-muted">
+            <TabsTrigger 
+              value="overview" 
+              data-testid="tab-overview"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <BarChart3 className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="consignments" 
+              data-testid="tab-consignments"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <Package className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Consignments</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="claims" 
+              data-testid="tab-claims"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <Gavel className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Claims</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="users" 
+              data-testid="tab-users"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <User className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Users</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="support" 
+              data-testid="tab-support"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <MessageSquare className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Support</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="analytics" 
+              data-testid="tab-analytics"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <TrendingUp className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Analytics</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6" data-testid="overview-content">
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               <Card data-testid="stat-active-consignments">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -890,7 +932,7 @@ export default function Admin() {
             </div>
 
             {/* Recent Activities */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
               <Card data-testid="recent-consignments">
                 <CardHeader>
                   <CardTitle>Recent Consignments</CardTitle>
