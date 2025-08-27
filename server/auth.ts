@@ -40,7 +40,7 @@ export function setupAuth(app: Express) {
   });
 
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || 'dev-secret-' + randomBytes(32).toString('hex'),
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
