@@ -15,8 +15,13 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
   const [, setLocation] = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/auth";
+    } catch (error) {
+      window.location.href = "/auth";
+    }
   };
 
   const navItems = [
@@ -98,15 +103,6 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
                 >
                   <User className="h-4 w-4 mr-2" />
                   {user.firstName || user.email || 'Account'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setLocation("/admin")}
-                  size="sm"
-                  data-testid="admin-link"
-                >
-                  <BarChart3 className="h-4 w-4 mr-1" />
-                  Admin
                 </Button>
                 <Button
                   variant="ghost"

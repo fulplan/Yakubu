@@ -14,7 +14,7 @@ import Admin from "@/pages/admin";
 import AuthPage from "@/pages/auth-page";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   return (
     <Switch>
@@ -25,6 +25,11 @@ function Router() {
           <Route path="/tracking" component={Tracking} />
           <Route path="/tracking/:consignmentNumber" component={Tracking} />
         </>
+      ) : user?.role === "admin" ? (
+        <>
+          <Route path="/" component={Admin} />
+          <Route path="/admin" component={Admin} />
+        </>
       ) : (
         <>
           <Route path="/" component={Home} />
@@ -32,7 +37,6 @@ function Router() {
           <Route path="/consignment" component={Consignment} />
           <Route path="/tracking" component={Tracking} />
           <Route path="/tracking/:consignmentNumber" component={Tracking} />
-          <Route path="/admin" component={Admin} />
         </>
       )}
       <Route component={NotFound} />

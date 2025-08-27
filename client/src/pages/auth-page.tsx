@@ -66,10 +66,16 @@ export default function AuthPage() {
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      const welcomeMessage = user.role === "admin" 
+        ? "Welcome to Admin Management Center!" 
+        : "Welcome back to your portfolio!";
+      
       toast({
-        title: "Welcome back!",
+        title: welcomeMessage,
         description: "You have been successfully logged in.",
       });
+      
       // Small delay to ensure the query cache is updated
       setTimeout(() => {
         setLocation("/");
@@ -92,10 +98,16 @@ export default function AuthPage() {
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      const welcomeMessage = user.role === "admin" 
+        ? "Welcome to Admin Management Center!" 
+        : "Welcome to GoldVault Pro!";
+      
       toast({
-        title: "Welcome to GoldVault Pro!",
+        title: welcomeMessage,
         description: "Your account has been created successfully.",
       });
+      
       // Small delay to ensure the query cache is updated
       setTimeout(() => {
         setLocation("/");

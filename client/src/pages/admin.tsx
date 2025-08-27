@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import Navigation from "@/components/Navigation";
+import AdminNavigation from "@/components/AdminNavigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,18 +40,18 @@ export default function Admin() {
 
   // Auth protection
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && (!isAuthenticated || user?.role !== "admin")) {
       toast({
         title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
+        description: "Admin access required. Redirecting to login...",
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/auth";
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+  }, [isAuthenticated, isLoading, user, toast]);
 
   // Admin data queries
   const { data: pendingClaims = [], isLoading: claimsLoading } = useQuery({
@@ -62,6 +62,10 @@ export default function Admin() {
   const { data: consignments = [] } = useQuery({
     queryKey: ["/api/consignments"],
     enabled: !!user,
+  });
+
+  const { data: goldPrices } = useQuery({
+    queryKey: ["/api/gold-prices"],
   });
 
   // Mutations
@@ -132,10 +136,8 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation 
-        goldPrice={2034.50}
-        onLogin={() => window.location.href = "/api/login"}
-        onRegister={() => window.location.href = "/api/login"}
+      <AdminNavigation
+        goldPrice={goldPrices?.usd || 2034.50}
         user={user}
       />
 
