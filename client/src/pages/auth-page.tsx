@@ -65,11 +65,15 @@ export default function AuthPage() {
     },
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Welcome back!",
         description: "You have been successfully logged in.",
       });
-      setLocation("/");
+      // Small delay to ensure the query cache is updated
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({
@@ -87,11 +91,15 @@ export default function AuthPage() {
     },
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Welcome to GoldVault Pro!",
         description: "Your account has been created successfully.",
       });
-      setLocation("/");
+      // Small delay to ensure the query cache is updated
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({
