@@ -30,13 +30,19 @@ import {
   AlertCircle,
   CheckCircle,
   Wallet,
-  Package
+  Package,
+  Home,
+  LogOut,
+  User
 } from "lucide-react";
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Active tab state for mobile navigation
+  const [activeTab, setActiveTab] = useState("portfolio");
 
   // Will Builder State
   const [willData, setWillData] = useState({
@@ -238,6 +244,15 @@ export default function Dashboard() {
     deleteBeneficiaryMutation.mutate(id);
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/auth";
+    } catch (error) {
+      window.location.href = "/auth";
+    }
+  };
+
   if (isLoading || consignmentsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -260,64 +275,121 @@ export default function Dashboard() {
   const profitLoss = currentMarketValue - totalValue;
   const totalAllocation = digitalWill?.beneficiaries?.reduce((sum: number, b: any) => sum + b.percentage, 0) || 0;
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation 
-        goldPrice={currentGoldPrice}
-        onLogin={() => window.location.href = "/api/login"}
-        onRegister={() => window.location.href = "/api/login"}
-        user={user}
-      />
+  // Mobile Bottom Navigation Component
+  const MobileBottomNav = () => (
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 md:hidden">
+      <div className="grid grid-cols-5 px-2 py-2">
+        {[
+          { id: 'portfolio', icon: Home, label: 'Portfolio' },
+          { id: 'consignments', icon: Package, label: 'Consignments' },
+          { id: 'certificates', icon: FileText, label: 'Certificates' },
+          { id: 'inheritance', icon: Shield, label: 'Inheritance' },
+          { id: 'tracking', icon: ExternalLink, label: 'Tracking' }
+        ].map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex flex-col items-center justify-center py-2 px-1 min-h-[60px] transition-colors ${
+              activeTab === id 
+                ? 'text-primary' 
+                : 'text-muted-foreground'
+            }`}
+            data-testid={`bottom-nav-${id}`}
+          >
+            <Icon className="h-5 w-5 mb-1" />
+            <span className="text-xs font-medium">{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard-page">
-        {/* Header */}
-        <div className="mb-8">
+  // Mobile Top Navigation Component
+  const MobileTopNav = () => (
+    <div className="bg-background border-b border-border sticky top-0 z-40 md:hidden">
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center">
+          <Shield className="h-6 w-6 text-primary mr-2" />
+          <span className="text-lg font-serif font-bold text-primary">GoldVault</span>
+        </div>
+        <div className="flex items-center space-x-3">
+          <span className="text-sm font-medium text-muted-foreground truncate max-w-[100px]">
+            {user?.firstName || user?.email?.split('@')[0] || 'User'}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="p-2 h-8 w-8"
+            data-testid="mobile-logout"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Desktop Navigation */}
+      <div className="hidden md:block">
+        <Navigation 
+          goldPrice={currentGoldPrice}
+          onLogin={() => window.location.href = "/api/login"}
+          onRegister={() => window.location.href = "/api/login"}
+          user={user}
+        />
+      </div>
+
+      {/* Mobile Top Navigation */}
+      <MobileTopNav />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8" data-testid="dashboard-page">
+        {/* Header - Desktop Only */}
+        <div className="mb-8 hidden md:block">
           <h1 className="text-4xl font-serif font-bold mb-4">Portfolio Dashboard</h1>
           <p className="text-xl text-muted-foreground">
             Manage your gold investments, certificates, and inheritance planning
           </p>
         </div>
 
-        <Tabs defaultValue="portfolio" className="space-y-8" data-testid="dashboard-tabs">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2 h-auto p-2 bg-muted">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8" data-testid="dashboard-tabs">
+          {/* Desktop Tabs - Hidden on Mobile */}
+          <TabsList className="hidden md:grid w-full grid-cols-5 gap-2 h-auto p-2 bg-muted">
             <TabsTrigger 
               value="portfolio" 
               data-testid="tab-portfolio"
-              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+              className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
-              <TrendingUp className="h-5 w-5 mb-1 md:hidden" />
               <span className="font-medium">Portfolio</span>
             </TabsTrigger>
             <TabsTrigger 
               value="consignments" 
               data-testid="tab-consignments"
-              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+              className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
-              <Package className="h-5 w-5 mb-1 md:hidden" />
               <span className="font-medium">Consignments</span>
             </TabsTrigger>
             <TabsTrigger 
               value="certificates" 
               data-testid="tab-certificates"
-              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+              className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
-              <FileText className="h-5 w-5 mb-1 md:hidden" />
               <span className="font-medium">Certificates</span>
             </TabsTrigger>
             <TabsTrigger 
               value="inheritance" 
               data-testid="tab-inheritance"
-              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+              className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
-              <Shield className="h-5 w-5 mb-1 md:hidden" />
               <span className="font-medium">Inheritance</span>
             </TabsTrigger>
             <TabsTrigger 
               value="tracking" 
               data-testid="tab-tracking"
-              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+              className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
-              <ExternalLink className="h-5 w-5 mb-1 md:hidden" />
               <span className="font-medium">Tracking</span>
             </TabsTrigger>
           </TabsList>
@@ -915,7 +987,13 @@ export default function Dashboard() {
         </Tabs>
       </div>
 
-      <Footer />
+      {/* Desktop Footer */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </div>
   );
 }
