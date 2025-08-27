@@ -722,6 +722,8 @@ export default function Admin() {
   const [verificationNotes, setVerificationNotes] = useState("");
   const [addToAccount, setAddToAccount] = useState(true);
   const [statusUpdateDialogOpen, setStatusUpdateDialogOpen] = useState(false);
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [statusNotes, setStatusNotes] = useState("");
   const [selectedClaimForDetails, setSelectedClaimForDetails] = useState<any>(null);
@@ -1574,17 +1576,63 @@ export default function Admin() {
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="addToAccount"
-                  checked={addToAccount}
-                  onCheckedChange={(checked) => setAddToAccount(checked === true)}
-                  data-testid="checkbox-add-to-account"
-                />
-                <Label htmlFor="addToAccount" className="text-sm">
-                  Add verified gold to customer's account
-                </Label>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="addToAccount"
+                    checked={addToAccount}
+                    onCheckedChange={(checked) => setAddToAccount(checked === true)}
+                    data-testid="checkbox-add-to-account"
+                  />
+                  <Label htmlFor="addToAccount" className="text-sm">
+                    Add verified gold to customer's account
+                  </Label>
+                </div>
+                
+                {addToAccount && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-700">
+                      <strong>Account Credit:</strong> Customer will receive{' '}
+                      <span className="font-mono">{verifiedWeight || '0'} oz</span> of{' '}
+                      <span className="font-mono">{verifiedPurity || '0'}%</span> purity gold in their account.
+                    </p>
+                  </div>
+                )}
+                
+                <div>
+                  <Label htmlFor="vaultLocation">Vault Location (Optional)</Label>
+                  <Select>
+                    <SelectTrigger data-testid="select-vault-location">
+                      <SelectValue placeholder="Select vault location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="london-1">London Vault 1</SelectItem>
+                      <SelectItem value="london-2">London Vault 2</SelectItem>
+                      <SelectItem value="zurich-1">Zurich Vault 1</SelectItem>
+                      <SelectItem value="singapore-1">Singapore Vault 1</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
+              {/* Validation Warnings */}
+              {(parseFloat(verifiedWeight) !== parseFloat(selectedConsignment?.weight || '0') || 
+                parseFloat(verifiedPurity) !== parseFloat(selectedConsignment?.purity || '0')) && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                    <div className="text-sm text-yellow-700">
+                      <p className="font-medium">Values differ from customer submission:</p>
+                      {parseFloat(verifiedWeight) !== parseFloat(selectedConsignment?.weight || '0') && (
+                        <p>• Weight: Customer {selectedConsignment?.weight} oz → Verified {verifiedWeight} oz</p>
+                      )}
+                      {parseFloat(verifiedPurity) !== parseFloat(selectedConsignment?.purity || '0') && (
+                        <p>• Purity: Customer {selectedConsignment?.purity}% → Verified {verifiedPurity}%</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end space-x-2">
                 <Button
@@ -1593,6 +1641,17 @@ export default function Admin() {
                   data-testid="button-cancel-verification"
                 >
                   Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setVerificationDialogOpen(false);
+                    setRejectionDialogOpen(true);
+                  }}
+                  data-testid="button-reject-consignment"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reject
                 </Button>
                 <Button
                   onClick={() => {
