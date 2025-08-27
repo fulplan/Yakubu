@@ -42,12 +42,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/consignments', isAuthenticated, uploadMiddleware.array('documents', 10), async (req: any, res) => {
     try {
       const userId = req.user.id;
+      // Generate tracking ID
+      const trackingId = crypto.randomUUID();
+      
       const consignmentData = insertConsignmentSchema.parse({
         ...req.body,
         userId,
-        weight: parseFloat(req.body.weight),
-        purity: parseFloat(req.body.purity),
-        estimatedValue: parseFloat(req.body.estimatedValue),
+        trackingId,
+        weight: req.body.weight.toString(),
+        purity: req.body.purity.toString(),
+        estimatedValue: req.body.estimatedValue.toString(),
+        insuranceEnabled: req.body.insuranceEnabled === 'true' || req.body.insuranceEnabled === true,
       });
 
       const consignment = await storage.createConsignment(consignmentData);
@@ -679,7 +684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      const chatMessage = await storage.createChatMessage({
+      const chatMessage = await storage.saveChatMessage({
         sessionId: req.params.sessionId,
         ticketId: ticketId || null,
         userId: userId || null,
@@ -922,7 +927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/admin/notifications/:id/read', isAdmin, async (req, res) => {
     try {
-      await storage.markNotificationAsRead(req.params.id);
+      await storage.markAdminNotificationAsRead(req.params.id);
       res.json({ message: "Notification marked as read" });
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -1149,7 +1154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/notifications/:id/read', isAuthenticated, async (req, res) => {
     try {
-      await storage.markNotificationAsRead(req.params.id);
+      await storage.markCustomerNotificationAsRead(req.params.id);
       res.json({ message: "Notification marked as read" });
     } catch (error) {
       console.error("Error marking notification as read:", error);

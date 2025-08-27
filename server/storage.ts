@@ -154,7 +154,7 @@ export interface IStorage {
   createCustomerNotification(notification: InsertCustomerNotification): Promise<CustomerNotification>;
   getCustomerNotifications(userId: string): Promise<CustomerNotification[]>;
   markNotificationAsDelivered(notificationId: string): Promise<void>;
-  markNotificationAsRead(notificationId: string): Promise<void>;
+  markCustomerNotificationAsRead(notificationId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -666,6 +666,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(adminNotifications.createdAt));
   }
 
+
+  async markAdminNotificationAsRead(notificationId: string): Promise<void> {
+    await db
+      .update(adminNotifications)
+      .set({ isRead: true })
+      .where(eq(adminNotifications.id, notificationId));
+  }
 
   async markAllNotificationsAsRead(adminId: string): Promise<void> {
     await db
