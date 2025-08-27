@@ -34,7 +34,9 @@ import {
   X,
   UserCheck,
   Settings,
-  Eye
+  Eye,
+  FileQuestion,
+  Send
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -732,6 +734,13 @@ export default function Admin() {
   const [assignedAdmin, setAssignedAdmin] = useState("");
   const [claimPriority, setClaimPriority] = useState("");
   const [claimFilter, setClaimFilter] = useState("all"); // all, pending, assigned, high_priority
+  const [documentVerificationDialog, setDocumentVerificationDialog] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [documentStatus, setDocumentStatus] = useState("");
+  const [documentNotes, setDocumentNotes] = useState("");
+  const [resolutionDialog, setResolutionDialog] = useState(false);
+  const [resolutionType, setResolutionType] = useState("");
+  const [resolutionDetails, setResolutionDetails] = useState("");
 
   // Auth protection
   useEffect(() => {
@@ -1314,7 +1323,23 @@ export default function Admin() {
               {/* Claims List */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Pending Inheritance Claims</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Claims Management</CardTitle>
+                    <Select value={claimFilter} onValueChange={setClaimFilter}>
+                      <SelectTrigger className="w-[200px]" data-testid="select-claim-filter">
+                        <SelectValue placeholder="Filter claims" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Claims</SelectItem>
+                        <SelectItem value="pending">Pending Review</SelectItem>
+                        <SelectItem value="under_review">Under Review</SelectItem>
+                        <SelectItem value="high_priority">High Priority</SelectItem>
+                        <SelectItem value="inheritance">Inheritance</SelectItem>
+                        <SelectItem value="ownership_dispute">Ownership Disputes</SelectItem>
+                        <SelectItem value="withdrawal_request">Withdrawal Requests</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {claimsLoading ? (
@@ -1361,89 +1386,254 @@ export default function Admin() {
                 </CardContent>
               </Card>
 
-              {/* Claim Details */}
+              {/* Enhanced Claim Details */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Claim Review</CardTitle>
+                  <CardTitle className="flex items-center justify-between">
+                    Comprehensive Claim Review
+                    {selectedClaim && (
+                      <Badge variant={selectedClaim.status === 'pending' ? 'secondary' : selectedClaim.status === 'approved' ? 'default' : selectedClaim.status === 'rejected' ? 'destructive' : 'outline'}>
+                        {selectedClaim.status}
+                      </Badge>
+                    )}
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="max-h-[600px] overflow-y-auto">
                   {selectedClaim ? (
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold mb-2">Claimant Information</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Name:</span>
-                            <span>{selectedClaim.claimantName}</span>
+                    <div className="space-y-6">
+                      {/* Claim Overview */}
+                      <div className="bg-muted/50 p-4 rounded-lg">
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          Claim Overview
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Claimant:</span>
+                            <p className="font-medium">{selectedClaim.claimantName}</p>
                           </div>
-                          <div className="flex justify-between">
+                          <div>
                             <span className="text-muted-foreground">Email:</span>
-                            <span>{selectedClaim.claimantEmail}</span>
+                            <p className="font-medium">{selectedClaim.claimantEmail}</p>
                           </div>
-                          <div className="flex justify-between">
+                          <div>
+                            <span className="text-muted-foreground">Claim Type:</span>
+                            <p className="capitalize font-medium">{selectedClaim.claimType || 'inheritance'}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Priority:</span>
+                            <Badge variant={selectedClaim.priority === 'high' || selectedClaim.priority === 'urgent' ? 'destructive' : 'secondary'} className="text-xs">
+                              {selectedClaim.priority || 'normal'}
+                            </Badge>
+                          </div>
+                          <div>
                             <span className="text-muted-foreground">Submitted:</span>
-                            <span>{new Date(selectedClaim.createdAt).toLocaleDateString()}</span>
+                            <p className="font-medium">{new Date(selectedClaim.createdAt).toLocaleDateString()}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Assigned To:</span>
+                            <p className="font-medium">{selectedClaim.assignedTo || 'Unassigned'}</p>
                           </div>
                         </div>
+                        {selectedClaim.claimReason && (
+                          <div className="mt-3">
+                            <span className="text-muted-foreground">Reason:</span>
+                            <p className="mt-1 text-sm">{selectedClaim.claimReason}</p>
+                          </div>
+                        )}
                       </div>
 
+                      {/* Document Verification */}
                       {selectedClaim.documentUrls?.length > 0 && (
                         <div>
-                          <h4 className="font-semibold mb-2">Documents</h4>
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Document Verification ({selectedClaim.documentUrls.length} documents)
+                          </h4>
                           <div className="space-y-2">
                             {selectedClaim.documentUrls.map((url: string, index: number) => (
-                              <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded">
-                                <FileText className="h-4 w-4" />
-                                <span className="text-sm">Document {index + 1}</span>
-                                <Button variant="ghost" size="sm" className="ml-auto" data-testid={`button-view-doc-${index}`}>
-                                  View
-                                </Button>
+                              <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded border">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <div className="flex-1">
+                                  <span className="text-sm font-medium">Document {index + 1}</span>
+                                  <p className="text-xs text-muted-foreground">
+                                    {url.includes('id') ? 'Identity Document' : 
+                                     url.includes('court') ? 'Court Order' :
+                                     url.includes('death') ? 'Death Certificate' :
+                                     url.includes('will') ? 'Will/Testament' : 'Supporting Document'}
+                                  </p>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" data-testid={`button-view-doc-${index}`}>
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedDocument({ url, index, type: url.includes('id') ? 'ID' : 'Other' });
+                                      setDocumentVerificationDialog(true);
+                                    }}
+                                    data-testid={`button-verify-doc-${index}`}
+                                  >
+                                    <Shield className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
                             ))}
                           </div>
                         </div>
                       )}
 
+                      {/* Communication Log */}
                       <div>
-                        <Label htmlFor="adminNotes">Admin Notes</Label>
-                        <Textarea
-                          id="adminNotes"
-                          value={claimNotes}
-                          onChange={(e) => setClaimNotes(e.target.value)}
-                          placeholder="Add notes about this claim review..."
-                          rows={4}
-                          data-testid="textarea-admin-notes"
-                        />
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Communication History
+                        </h4>
+                        <div className="space-y-2 max-h-32 overflow-y-auto mb-3">
+                          {selectedClaim.communications?.length > 0 ? (
+                            selectedClaim.communications.map((comm: any, index: number) => (
+                              <div key={index} className="text-xs p-2 bg-muted/30 rounded">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="font-medium">{comm.adminName || 'Admin'}</span>
+                                  <span className="text-muted-foreground">{new Date(comm.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <p>{comm.message}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-center py-2">No communications yet</p>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Textarea
+                            value={communicationMessage}
+                            onChange={(e) => setCommunicationMessage(e.target.value)}
+                            placeholder="Add communication to claimant..."
+                            rows={2}
+                            className="flex-1"
+                            data-testid="textarea-communication"
+                          />
+                          <Button
+                            onClick={() => {
+                              if (communicationMessage.trim()) {
+                                addCommunicationMutation.mutate({
+                                  id: selectedClaim.id,
+                                  message: communicationMessage
+                                });
+                              }
+                            }}
+                            disabled={addCommunicationMutation.isPending || !communicationMessage.trim()}
+                            size="sm"
+                            data-testid="button-send-communication"
+                          >
+                            <Send className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
 
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={() => handleClaimAction('approved')}
-                          disabled={updateClaimMutation.isPending}
-                          className="flex-1"
-                          data-testid="button-approve-claim"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Approve
-                        </Button>
-                        <Button 
-                          variant="destructive"
-                          onClick={() => handleClaimAction('rejected')}
-                          disabled={updateClaimMutation.isPending}
-                          className="flex-1"
-                          data-testid="button-reject-claim"
-                        >
-                          <AlertTriangle className="h-4 w-4 mr-2" />
-                          Reject
-                        </Button>
+                      {/* Admin Actions */}
+                      <div>
+                        <h4 className="font-semibold mb-3">Admin Actions</h4>
+                        <div className="space-y-3">
+                          {/* Priority & Assignment */}
+                          <div className="flex gap-2">
+                            <Select value={claimPriority} onValueChange={setClaimPriority}>
+                              <SelectTrigger className="w-32" data-testid="select-priority">
+                                <SelectValue placeholder="Priority" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="low">Low</SelectItem>
+                                <SelectItem value="normal">Normal</SelectItem>
+                                <SelectItem value="high">High</SelectItem>
+                                <SelectItem value="urgent">Urgent</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (claimPriority) {
+                                  updatePriorityMutation.mutate({
+                                    id: selectedClaim.id,
+                                    priority: claimPriority
+                                  });
+                                }
+                              }}
+                              disabled={updatePriorityMutation.isPending || !claimPriority}
+                              data-testid="button-update-priority"
+                            >
+                              <Settings className="h-3 w-3 mr-1" />
+                              Set Priority
+                            </Button>
+                          </div>
+
+                          {/* Admin Notes */}
+                          <div>
+                            <Label htmlFor="adminNotes">Comprehensive Review Notes</Label>
+                            <Textarea
+                              id="adminNotes"
+                              value={claimNotes}
+                              onChange={(e) => setClaimNotes(e.target.value)}
+                              placeholder="Document your review findings, verification results, legal considerations..."
+                              rows={4}
+                              data-testid="textarea-admin-notes"
+                            />
+                          </div>
+
+                          {/* Resolution Actions */}
+                          <div className="flex gap-2">
+                            <Button 
+                              onClick={() => {
+                                setResolutionType('approved');
+                                setResolutionDialog(true);
+                              }}
+                              disabled={updateClaimMutation.isPending}
+                              className="flex-1"
+                              data-testid="button-approve-claim"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve Claim
+                            </Button>
+                            <Button 
+                              variant="destructive"
+                              onClick={() => {
+                                setResolutionType('rejected');
+                                setResolutionDialog(true);
+                              }}
+                              disabled={updateClaimMutation.isPending}
+                              className="flex-1"
+                              data-testid="button-reject-claim"
+                            >
+                              <AlertTriangle className="h-4 w-4 mr-2" />
+                              Reject Claim
+                            </Button>
+                          </div>
+                          
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              setResolutionType('additional_info');
+                              setResolutionDialog(true);
+                            }}
+                            disabled={updateClaimMutation.isPending}
+                            className="w-full"
+                            data-testid="button-request-info"
+                          >
+                            <FileQuestion className="h-4 w-4 mr-2" />
+                            Request Additional Information
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <div className="text-center py-12">
                       <Gavel className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <h4 className="text-lg font-semibold mb-2">Select a Claim</h4>
+                      <h4 className="text-lg font-semibold mb-2">Select a Claim to Review</h4>
                       <p className="text-muted-foreground">
-                        Choose a claim from the list to review details and take action.
+                        Choose a claim from the list to access comprehensive review tools, document verification, and resolution workflows.
                       </p>
                     </div>
                   )}
@@ -1793,6 +1983,235 @@ export default function Admin() {
           </DialogContent>
         </Dialog>
       </div>
+
+        {/* Document Verification Dialog */}
+        <Dialog open={documentVerificationDialog} onOpenChange={setDocumentVerificationDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Document Verification
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              {selectedDocument && (
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Document Details</h4>
+                  <div className="text-sm space-y-1">
+                    <p><span className="text-muted-foreground">Type:</span> {selectedDocument.type} Document</p>
+                    <p><span className="text-muted-foreground">File:</span> Document {selectedDocument.index + 1}</p>
+                    <p><span className="text-muted-foreground">URL:</span> <span className="font-mono text-xs break-all">{selectedDocument.url}</span></p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="documentStatus">Verification Status</Label>
+                <Select value={documentStatus} onValueChange={setDocumentStatus}>
+                  <SelectTrigger data-testid="select-document-status">
+                    <SelectValue placeholder="Select verification status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="verified">Verified ✓</SelectItem>
+                    <SelectItem value="rejected">Rejected ✗</SelectItem>
+                    <SelectItem value="requires_clarification">Requires Clarification ⚠️</SelectItem>
+                    <SelectItem value="pending_additional">Pending Additional Documents 📋</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="documentNotes">Verification Notes</Label>
+                <Textarea
+                  id="documentNotes"
+                  value={documentNotes}
+                  onChange={(e) => setDocumentNotes(e.target.value)}
+                  placeholder="Document verification details, authenticity checks, issues found..."
+                  rows={4}
+                  data-testid="textarea-document-notes"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDocumentVerificationDialog(false);
+                    setDocumentStatus("");
+                    setDocumentNotes("");
+                    setSelectedDocument(null);
+                  }}
+                  data-testid="button-cancel-document-verification"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!documentStatus) {
+                      toast({
+                        title: "Missing Status",
+                        description: "Please select a verification status.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    toast({
+                      title: "Document Verified",
+                      description: `Document ${selectedDocument?.index + 1} marked as ${documentStatus}.`,
+                    });
+
+                    setDocumentVerificationDialog(false);
+                    setDocumentStatus("");
+                    setDocumentNotes("");
+                    setSelectedDocument(null);
+                  }}
+                  disabled={!documentStatus}
+                  data-testid="button-save-document-verification"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Save Verification
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Claim Resolution Dialog */}
+        <Dialog open={resolutionDialog} onOpenChange={setResolutionDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {resolutionType === 'approved' ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : resolutionType === 'rejected' ? (
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                ) : (
+                  <FileQuestion className="h-5 w-5 text-blue-600" />
+                )}
+                {resolutionType === 'approved' ? 'Approve Claim' : 
+                 resolutionType === 'rejected' ? 'Reject Claim' : 
+                 'Request Additional Information'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className={`p-4 rounded-lg ${
+                resolutionType === 'approved' ? 'bg-green-50 dark:bg-green-900/20' :
+                resolutionType === 'rejected' ? 'bg-red-50 dark:bg-red-900/20' :
+                'bg-blue-50 dark:bg-blue-900/20'
+              }`}>
+                <h4 className="font-medium mb-2">Resolution Summary</h4>
+                <div className="text-sm space-y-1">
+                  <p><span className="text-muted-foreground">Claimant:</span> {selectedClaim?.claimantName}</p>
+                  <p><span className="text-muted-foreground">Claim Type:</span> {selectedClaim?.claimType || 'inheritance'}</p>
+                  <p><span className="text-muted-foreground">Action:</span> 
+                    <span className={`ml-1 font-medium ${
+                      resolutionType === 'approved' ? 'text-green-700 dark:text-green-400' :
+                      resolutionType === 'rejected' ? 'text-red-700 dark:text-red-400' :
+                      'text-blue-700 dark:text-blue-400'
+                    }`}>
+                      {resolutionType === 'approved' ? 'APPROVE CLAIM' : 
+                       resolutionType === 'rejected' ? 'REJECT CLAIM' : 
+                       'REQUEST ADDITIONAL INFORMATION'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="resolutionDetails">
+                  {resolutionType === 'approved' ? 'Approval Details & Next Steps' : 
+                   resolutionType === 'rejected' ? 'Rejection Reason & Explanation' : 
+                   'Information Required'}
+                </Label>
+                <Textarea
+                  id="resolutionDetails"
+                  value={resolutionDetails}
+                  onChange={(e) => setResolutionDetails(e.target.value)}
+                  placeholder={
+                    resolutionType === 'approved' ? 
+                      'Explain the approval decision, next steps for the claimant, timeline for resolution...' :
+                    resolutionType === 'rejected' ? 
+                      'Provide detailed reason for rejection, legal basis, appeal process if applicable...' :
+                      'Specify what additional documents or information is needed from the claimant...'
+                  }
+                  rows={6}
+                  data-testid="textarea-resolution-details"
+                />
+              </div>
+
+              {resolutionType === 'approved' && (
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
+                  <p className="text-sm text-green-800 dark:text-green-200">
+                    <strong>⚠️ Important:</strong> Approving this claim will initiate the resolution process. 
+                    Ensure all documentation has been properly verified and legal requirements met.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setResolutionDialog(false);
+                    setResolutionType("");
+                    setResolutionDetails("");
+                  }}
+                  data-testid="button-cancel-resolution"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant={resolutionType === 'rejected' ? 'destructive' : 'default'}
+                  onClick={() => {
+                    if (!resolutionDetails.trim()) {
+                      toast({
+                        title: "Missing Details",
+                        description: "Please provide resolution details.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // Update claim with resolution
+                    updateClaimMutation.mutate({
+                      id: selectedClaim.id,
+                      status: resolutionType === 'additional_info' ? 'pending_info' : resolutionType,
+                      adminNotes: claimNotes,
+                      resolutionDetails: resolutionDetails
+                    });
+
+                    setResolutionDialog(false);
+                    setResolutionType("");
+                    setResolutionDetails("");
+                  }}
+                  disabled={updateClaimMutation.isPending || !resolutionDetails.trim()}
+                  data-testid="button-confirm-resolution"
+                >
+                  {updateClaimMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      {resolutionType === 'approved' ? (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      ) : resolutionType === 'rejected' ? (
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      {resolutionType === 'approved' ? 'Approve Claim' : 
+                       resolutionType === 'rejected' ? 'Reject Claim' : 
+                       'Send Request'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       <Footer />
     </div>
