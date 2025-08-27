@@ -567,19 +567,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(supportTickets.id, ticketId));
   }
 
-  async resolveTicket(ticketId: string, resolvedBy: string, resolutionNotes: string): Promise<void> {
-    await db
-      .update(supportTickets)
-      .set({ 
-        status: 'resolved',
-        resolvedBy,
-        resolvedAt: new Date(),
-        resolutionNotes,
-        updatedAt: new Date(),
-        lastActivity: new Date()
-      })
-      .where(eq(supportTickets.id, ticketId));
-  }
 
   async updateTicketActivity(ticketId: string): Promise<void> {
     await db
@@ -679,12 +666,6 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(adminNotifications.createdAt));
   }
 
-  async markNotificationAsRead(notificationId: string): Promise<void> {
-    await db
-      .update(adminNotifications)
-      .set({ isRead: true })
-      .where(eq(adminNotifications.id, notificationId));
-  }
 
   async markAllNotificationsAsRead(adminId: string): Promise<void> {
     await db
@@ -700,20 +681,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Storage plans
-  async getStoragePlans(): Promise<StoragePlan[]> {
-    return db
-      .select()
-      .from(storagePlans)
-      .where(eq(storagePlans.active, true));
-  }
-
-  async getStoragePlan(id: string): Promise<StoragePlan | undefined> {
-    const [plan] = await db
-      .select()
-      .from(storagePlans)
-      .where(and(eq(storagePlans.id, id), eq(storagePlans.active, true)));
-    return plan;
-  }
   // Account transaction operations
   async createAccountTransaction(transaction: InsertAccountTransaction): Promise<AccountTransaction> {
     const [accountTransaction] = await db
@@ -1024,13 +991,43 @@ export class DatabaseStorage implements IStorage {
       .where(eq(customerNotifications.id, notificationId));
   }
 
-  async markNotificationAsRead(notificationId: string): Promise<void> {
+  async markCustomerNotificationAsRead(notificationId: string): Promise<void> {
     await db
       .update(customerNotifications)
       .set({
         readAt: new Date()
       })
       .where(eq(customerNotifications.id, notificationId));
+  }
+
+  // Additional support ticket functions
+  async getUserSupportTickets(customerEmail: string): Promise<SupportTicket[]> {
+    return db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.customerEmail, customerEmail))
+      .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async updateTicketLastActivity(ticketId: string): Promise<void> {
+    await db
+      .update(supportTickets)
+      .set({ lastActivity: new Date() })
+      .where(eq(supportTickets.id, ticketId));
+  }
+
+  async resolveTicket(ticketId: string, adminId: string, resolutionNotes: string): Promise<void> {
+    await db
+      .update(supportTickets)
+      .set({
+        status: 'resolved',
+        resolvedAt: new Date(),
+        resolvedBy: adminId,
+        resolutionNotes,
+        updatedAt: new Date(),
+        lastActivity: new Date()
+      })
+      .where(eq(supportTickets.id, ticketId));
   }
 }
 

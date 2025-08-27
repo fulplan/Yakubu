@@ -37,7 +37,9 @@ import {
   Bell,
   BellRing,
   Clock as ClockIcon,
-  MapPin
+  MapPin,
+  CreditCard,
+  MessageSquare
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -119,6 +121,18 @@ export default function Dashboard() {
   // Fetch customer notifications
   const { data: notifications = [] } = useQuery({
     queryKey: ["/api/notifications"],
+    enabled: !!user,
+  });
+
+  // Fetch account transactions
+  const { data: accountTransactions = [] } = useQuery({
+    queryKey: ["/api/account/transactions"],
+    enabled: !!user,
+  });
+
+  // Fetch support tickets
+  const { data: supportTickets = [] } = useQuery({
+    queryKey: ["/api/support-tickets/mine"],
     enabled: !!user,
   });
 
@@ -411,7 +425,7 @@ export default function Dashboard() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-8" data-testid="dashboard-tabs">
           {/* Desktop Tabs - Hidden on Mobile */}
-          <TabsList className="hidden md:grid w-full grid-cols-6 gap-2 h-auto p-2 bg-muted">
+          <TabsList className="hidden md:grid w-full grid-cols-8 gap-1 h-auto p-2 bg-muted">
             <TabsTrigger 
               value="portfolio" 
               data-testid="tab-portfolio"
@@ -446,6 +460,20 @@ export default function Dashboard() {
               className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
               <span className="font-medium">Tracking</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="transactions" 
+              data-testid="tab-transactions"
+              className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <span className="font-medium">Transactions</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notifications" 
+              data-testid="tab-notifications"
+              className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <span className="font-medium">Notifications</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1037,6 +1065,179 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Transactions Tab */}
+          <TabsContent value="transactions" className="space-y-4 md:space-y-6" data-testid="transactions-content">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Account Transactions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {accountTransactions.length > 0 ? (
+                  <div className="space-y-3">
+                    {accountTransactions.map((transaction: any) => (
+                      <div key={transaction.id} className="flex items-center justify-between p-4 bg-muted rounded-lg" data-testid={`transaction-${transaction.id}`}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${transaction.type === 'credit' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                            <span className="font-medium">{transaction.description}</span>
+                          </div>
+                          <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                            <span>{new Date(transaction.createdAt).toLocaleDateString()}</span>
+                            <span>{new Date(transaction.createdAt).toLocaleTimeString()}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`font-bold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                            {transaction.type === 'credit' ? '+' : '-'}${parseFloat(transaction.amount).toFixed(2)}
+                          </span>
+                          <p className="text-xs text-muted-foreground capitalize">{transaction.type}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <CreditCard className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-lg font-semibold mb-2">No Transactions</h4>
+                    <p className="text-muted-foreground">Your account transaction history will appear here.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="space-y-4 md:space-y-6" data-testid="notifications-content">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Bell className="h-5 w-5 mr-2" />
+                  Your Notifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {notifications.length > 0 ? (
+                  <div className="space-y-3">
+                    {notifications.map((notification: any) => (
+                      <div key={notification.id} className="p-4 bg-muted rounded-lg" data-testid={`notification-${notification.id}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${notification.readAt ? 'bg-gray-400' : 'bg-blue-500'}`}></div>
+                              <span className="font-medium">{notification.title}</span>
+                              {notification.priority === 'urgent' && (
+                                <Badge variant="destructive" className="text-xs">Urgent</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              <span>{new Date(notification.createdAt).toLocaleDateString()}</span>
+                              <span>{new Date(notification.createdAt).toLocaleTimeString()}</span>
+                              {notification.readAt && <span>Read</span>}
+                            </div>
+                          </div>
+                          {!notification.readAt && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await apiRequest("PATCH", `/api/notifications/${notification.id}/read`, {});
+                                  queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+                                  toast({
+                                    title: "Notification marked as read",
+                                    description: "The notification has been marked as read.",
+                                  });
+                                } catch (error) {
+                                  toast({
+                                    title: "Error",
+                                    description: "Failed to mark notification as read.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              data-testid={`button-mark-read-${notification.id}`}
+                            >
+                              Mark as Read
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Bell className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-lg font-semibold mb-2">No Notifications</h4>
+                    <p className="text-muted-foreground">You'll receive notifications about your account activity here.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Support Tickets Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <MessageSquare className="h-5 w-5 mr-2" />
+                  Your Support Tickets
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {supportTickets.length > 0 ? (
+                  <div className="space-y-3">
+                    {supportTickets.map((ticket: any) => (
+                      <div key={ticket.id} className="p-4 bg-muted rounded-lg" data-testid={`ticket-${ticket.id}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{ticket.subject}</span>
+                              <Badge variant={ticket.status === 'resolved' ? 'default' : 'secondary'} className="text-xs">
+                                {ticket.status}
+                              </Badge>
+                              {ticket.priority === 'urgent' && (
+                                <Badge variant="destructive" className="text-xs">Urgent</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{ticket.description}</p>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              <span>Created: {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                              {ticket.lastActivity && (
+                                <span>Last Activity: {new Date(ticket.lastActivity).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.location.href = `/support/${ticket.id}`}
+                            data-testid={`button-view-ticket-${ticket.id}`}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            View Chat
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-lg font-semibold mb-2">No Support Tickets</h4>
+                    <p className="text-muted-foreground mb-4">Need help? Create a support ticket to get assistance.</p>
+                    <Button onClick={() => window.location.href = "/support"} data-testid="button-create-ticket">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Support Ticket
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

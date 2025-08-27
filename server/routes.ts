@@ -630,6 +630,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer-facing APIs for notifications and support
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const notifications = await storage.getCustomerNotifications(req.user.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching customer notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.patch('/api/notifications/:id/read', isAuthenticated, async (req, res) => {
+    try {
+      await storage.markCustomerNotificationAsRead(req.params.id);
+      res.json({ message: "Notification marked as read" });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.get('/api/support-tickets/mine', isAuthenticated, async (req: any, res) => {
+    try {
+      const tickets = await storage.getUserSupportTickets(req.user.email);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching user support tickets:", error);
+      res.status(500).json({ message: "Failed to fetch support tickets" });
+    }
+  });
+
+  app.get('/api/chat/:sessionId', async (req, res) => {
+    try {
+      const messages = await storage.getChatMessages(req.params.sessionId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching chat messages:", error);
+      res.status(500).json({ message: "Failed to fetch chat messages" });
+    }
+  });
+
+  app.post('/api/chat/:sessionId', async (req, res) => {
+    try {
+      const { message, ticketId, userId, isCustomer = true, messageType = 'text' } = req.body;
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const chatMessage = await storage.createChatMessage({
+        sessionId: req.params.sessionId,
+        ticketId: ticketId || null,
+        userId: userId || null,
+        isCustomer,
+        message,
+        messageType,
+        attachmentUrls: [],
+      });
+
+      // Update ticket last activity if this is for a ticket
+      if (ticketId) {
+        await storage.updateTicketLastActivity(ticketId);
+        
+        // Create admin notification for customer responses
+        if (isCustomer) {
+          const ticket = await storage.getSupportTicket(ticketId);
+          if (ticket && ticket.assignedTo) {
+            await storage.createAdminNotification({
+              adminId: ticket.assignedTo,
+              type: 'customer_response',
+              title: 'Customer Response',
+              message: `Customer replied to ticket: ${ticket.subject}`,
+              ticketId: ticketId,
+              priority: 'normal',
+              actionRequired: true,
+            });
+          }
+        }
+      }
+
+      res.status(201).json(chatMessage);
+    } catch (error) {
+      console.error("Error creating chat message:", error);
+      res.status(500).json({ message: "Failed to create chat message" });
+    }
+  });
+
   // Chat APIs
   // Support ticket routes
   app.get('/api/admin/support-tickets', isAdmin, async (req, res) => {
