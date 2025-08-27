@@ -414,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Account transaction routes for credit/debit
-  app.post('/api/admin/users/:id/credit', isAdmin, async (req, res) => {
+  app.post('/api/admin/users/:id/credit', isAdmin, async (req: any, res) => {
     try {
       const userId = req.params.id;
       const { amount, description } = req.body;
@@ -438,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/users/:id/debit', isAdmin, async (req, res) => {
+  app.post('/api/admin/users/:id/debit', isAdmin, async (req: any, res) => {
     try {
       const userId = req.params.id;
       const { amount, description } = req.body;
@@ -483,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gold holding routes for admin gold management
-  app.post('/api/admin/users/:id/credit-gold', isAdmin, async (req, res) => {
+  app.post('/api/admin/users/:id/credit-gold', isAdmin, async (req: any, res) => {
     try {
       const userId = req.params.id;
       const { weight, purity, description, purchasePrice } = req.body;
@@ -513,7 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/users/:id/debit-gold', isAdmin, async (req, res) => {
+  app.post('/api/admin/users/:id/debit-gold', isAdmin, async (req: any, res) => {
     try {
       const userId = req.params.id;
       const { weight, purity, description } = req.body;

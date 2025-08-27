@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   FileText,
   MessageSquare,
+  MessageCircle,
   BarChart3,
   Shield,
   Clock,
@@ -51,7 +52,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // User Management Component
 function UserManagement() {
@@ -772,7 +773,7 @@ export default function Admin() {
 
   // Auth protection
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || user?.role !== "admin")) {
+    if (!isLoading && (!isAuthenticated || (user as any)?.role !== "admin")) {
       toast({
         title: "Unauthorized",
         description: "Admin access required. Redirecting to login...",
@@ -1063,7 +1064,7 @@ export default function Admin() {
       const response = await apiRequest("POST", `/api/chat/${sessionId}`, {
         message,
         ticketId,
-        userId: user?.id,
+        userId: (user as any)?.id,
         isCustomer: false,
         messageType: 'text'
       });
@@ -2874,8 +2875,7 @@ export default function Admin() {
                     updateClaimMutation.mutate({
                       id: selectedClaim.id,
                       status: resolutionType === 'additional_info' ? 'pending_info' : resolutionType,
-                      adminNotes: claimNotes,
-                      resolutionDetails: resolutionDetails
+                      adminNotes: `${claimNotes}\n\nResolution Details: ${resolutionDetails}`,
                     });
 
                     setResolutionDialog(false);
