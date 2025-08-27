@@ -44,6 +44,17 @@ export default function Dashboard() {
   // Active tab state for mobile navigation
   const [activeTab, setActiveTab] = useState("portfolio");
 
+  // Check URL parameters for tab navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab && ['portfolio', 'consignments', 'certificates', 'inheritance', 'tracking'].includes(tab)) {
+      setActiveTab(tab);
+      // Clean up URL without triggering page reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   // Will Builder State
   const [willData, setWillData] = useState({
     primaryBeneficiary: "",

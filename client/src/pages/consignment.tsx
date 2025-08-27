@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, FileText, Shield, CheckCircle, ArrowLeft } from "lucide-react";
+import { Upload, FileText, Shield, CheckCircle, ArrowLeft, LogOut, Home, Package, ExternalLink } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function Consignment() {
@@ -44,7 +44,8 @@ export default function Consignment() {
         description: `Your consignment #${consignment.consignmentNumber} has been created and is pending verification.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/consignments"] });
-      setLocation("/dashboard");
+      // Navigate back to dashboard and switch to consignments tab
+      window.location.href = "/dashboard?tab=consignments";
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -110,6 +111,51 @@ export default function Consignment() {
     return null; // Will be redirected by auth flow
   }
 
+  // Mobile Top Navigation Component
+  const MobileTopNav = () => (
+    <div className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-40 md:hidden">
+      <div className="flex items-center justify-between px-4 py-3 min-h-[56px]">
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/dashboard")}
+            className="p-1 h-8 w-8"
+            data-testid="mobile-back"
+            aria-label="Back to Dashboard"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center">
+            <Shield className="h-5 w-5 text-primary mr-2" />
+            <div>
+              <span className="text-base font-serif font-bold text-primary">GoldVault</span>
+              <p className="text-xs text-muted-foreground leading-none">New Consignment</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-medium text-muted-foreground truncate max-w-[80px]">
+            {(user as any)?.firstName || (user as any)?.email?.split('@')[0] || 'User'}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              toast({ title: "Logging out..." });
+              window.location.href = "/api/logout";
+            }}
+            className="p-1.5 h-8 w-8"
+            data-testid="mobile-logout"
+            aria-label="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">
       {/* Desktop Navigation */}
@@ -121,6 +167,9 @@ export default function Consignment() {
           user={user}
         />
       </div>
+
+      {/* Mobile Top Navigation */}
+      <MobileTopNav />
 
       <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-3 md:py-8" data-testid="consignment-page">
         {/* Header */}
@@ -411,6 +460,36 @@ export default function Consignment() {
       {/* Desktop Footer */}
       <div className="hidden md:block">
         <Footer />
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 md:hidden shadow-lg">
+        <div className="grid grid-cols-5 px-1 py-3 safe-area-inset-bottom">
+          {[
+            { id: 'portfolio', icon: Home, label: 'Portfolio', shortLabel: 'Home', href: '/dashboard' },
+            { id: 'consignments', icon: Package, label: 'Consignments', shortLabel: 'Assets', href: '/dashboard?tab=consignments', active: true },
+            { id: 'certificates', icon: FileText, label: 'Certificates', shortLabel: 'Docs', href: '/dashboard?tab=certificates' },
+            { id: 'inheritance', icon: Shield, label: 'Inheritance', shortLabel: 'Will', href: '/dashboard?tab=inheritance' },
+            { id: 'tracking', icon: ExternalLink, label: 'Tracking', shortLabel: 'Track', href: '/dashboard?tab=tracking' }
+          ].map(({ id, icon: Icon, label, shortLabel, href, active }) => (
+            <button
+              key={id}
+              onClick={() => window.location.href = href}
+              className={`flex flex-col items-center justify-center py-2 px-1 min-h-[64px] transition-all duration-200 rounded-lg mx-1 ${
+                active 
+                  ? 'text-primary bg-primary/10' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+              data-testid={`bottom-nav-${id}`}
+              aria-label={label}
+            >
+              <Icon className={`h-6 w-6 mb-1 ${active ? 'scale-110' : ''} transition-transform`} />
+              <span className="text-[10px] font-medium leading-tight text-center max-w-[60px] truncate">
+                {shortLabel}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
