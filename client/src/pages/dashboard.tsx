@@ -256,16 +256,17 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-8" data-testid="dashboard-tabs">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+        <Tabs defaultValue="portfolio" className="space-y-8" data-testid="dashboard-tabs">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="portfolio" data-testid="tab-portfolio">Portfolio</TabsTrigger>
             <TabsTrigger value="consignments" data-testid="tab-consignments">Consignments</TabsTrigger>
             <TabsTrigger value="certificates" data-testid="tab-certificates">Certificates</TabsTrigger>
             <TabsTrigger value="inheritance" data-testid="tab-inheritance">Inheritance</TabsTrigger>
+            <TabsTrigger value="tracking" data-testid="tab-tracking">Tracking</TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6" data-testid="overview-content">
+          {/* Portfolio Tab */}
+          <TabsContent value="portfolio" className="space-y-6" data-testid="portfolio-content">
             {/* Portfolio Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card data-testid="stat-total-value">
@@ -442,6 +443,56 @@ export default function Dashboard() {
                     </p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tracking Tab */}
+          <TabsContent value="tracking" className="space-y-6" data-testid="tracking-content">
+            <Card>
+              <CardHeader>
+                <CardTitle>Track Your Consignments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {consignments.length > 0 ? (
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground mb-4">Click on any consignment to view detailed tracking information.</p>
+                      {consignments.map((consignment: any) => (
+                        <Card key={consignment.id} className="p-4 cursor-pointer hover:bg-muted transition-colors" 
+                              onClick={() => window.location.href = `/tracking/${consignment.consignmentNumber}`}
+                              data-testid={`tracking-item-${consignment.id}`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-semibold">#{consignment.consignmentNumber}</h4>
+                              <p className="text-sm text-muted-foreground">{consignment.description}</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Badge variant={consignment.status === 'stored' ? 'default' : 'secondary'}>
+                                {consignment.status}
+                              </Badge>
+                              <Button variant="outline" size="sm" data-testid={`track-btn-${consignment.id}`}>
+                                Track Details
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h4 className="text-lg font-semibold mb-2">No consignments to track</h4>
+                      <p className="text-muted-foreground mb-4">
+                        Create your first consignment to start tracking.
+                      </p>
+                      <Button onClick={() => window.location.href = "/consignment"} data-testid="button-create-first-tracking">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create First Consignment
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

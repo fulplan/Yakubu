@@ -25,14 +25,14 @@ function Router() {
           <Route path="/tracking" component={Tracking} />
           <Route path="/tracking/:consignmentNumber" component={Tracking} />
         </>
-      ) : user?.role === "admin" ? (
+      ) : (user as any)?.role === "admin" ? (
         <>
           <Route path="/" component={Admin} />
           <Route path="/admin" component={Admin} />
         </>
       ) : (
         <>
-          <Route path="/" component={Home} />
+          <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/consignment" component={Consignment} />
           <Route path="/tracking" component={Tracking} />

@@ -32,12 +32,7 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
     { href: "/#about", label: "About" },
   ];
 
-  const userNavItems = user ? [
-    { href: "/", label: "Dashboard" },
-    { href: "/consignment", label: "Consignment" },
-    { href: "/dashboard", label: "Portfolio" },
-    { href: "/tracking", label: "Tracking" },
-  ] : navItems;
+  const userNavItems = user ? [] : navItems;
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-opacity-95" data-testid="navigation">
