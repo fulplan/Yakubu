@@ -381,14 +381,14 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 md:py-8" data-testid="dashboard-page">
         {/* Header - Desktop Only */}
-        <div className="mb-8 hidden md:block">
+        <div className="mb-4 md:mb-8 hidden md:block">
           <h1 className="text-4xl font-serif font-bold mb-4">Portfolio Dashboard</h1>
           <p className="text-xl text-muted-foreground">
             Manage your gold investments, certificates, and inheritance planning
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8" data-testid="dashboard-tabs">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-8" data-testid="dashboard-tabs">
           {/* Desktop Tabs - Hidden on Mobile */}
           <TabsList className="hidden md:grid w-full grid-cols-5 gap-2 h-auto p-2 bg-muted">
             <TabsTrigger 
@@ -429,7 +429,7 @@ export default function Dashboard() {
           </TabsList>
 
           {/* Portfolio Tab */}
-          <TabsContent value="portfolio" className="space-y-6" data-testid="portfolio-content">
+          <TabsContent value="portfolio" className="space-y-4 md:space-y-6" data-testid="portfolio-content">
             {/* Account Balance - Top Priority for Mobile */}
             <Card data-testid="account-balance" className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
               <CardHeader className="pb-3">
@@ -678,14 +678,14 @@ export default function Dashboard() {
           </TabsContent>
 
           {/* Consignments Tab */}
-          <TabsContent value="consignments" className="space-y-6" data-testid="consignments-content">
+          <TabsContent value="consignments" className="space-y-4 md:space-y-6" data-testid="consignments-content">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Your Gold Consignments</CardTitle>
+              <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
+                <CardTitle className="text-lg md:text-xl">Your Gold Consignments</CardTitle>
                 <Button 
                   onClick={() => window.location.href = "/consignment"} 
                   data-testid="button-new-consignment"
-                  className="min-h-[44px] px-6 text-sm md:text-base touch-manipulation"
+                  className="min-h-[44px] px-4 md:px-6 text-sm md:text-base touch-manipulation w-full md:w-auto"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   New Consignment
@@ -695,45 +695,44 @@ export default function Dashboard() {
                 {consignments.length > 0 ? (
                   <div className="space-y-4">
                     {consignments.map((consignment: any) => (
-                      <Card key={consignment.id} className="p-4" data-testid={`consignment-${consignment.id}`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold">#{consignment.consignmentNumber}</h4>
-                            <p className="text-sm text-muted-foreground">{consignment.description}</p>
-                            <div className="flex items-center gap-4 mt-2 text-sm">
+                      <Card key={consignment.id} className="p-3 md:p-4" data-testid={`consignment-${consignment.id}`}>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-0">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-sm md:text-base">#{consignment.consignmentNumber}</h4>
+                            <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-0">{consignment.description}</p>
+                            <div className="grid grid-cols-1 md:flex md:items-center md:gap-4 gap-1 md:mt-2 text-xs md:text-sm">
                               <span>Weight: {consignment.weight} oz</span>
                               <span>Purity: {consignment.purity}%</span>
                               <span>Value: ${parseFloat(consignment.estimatedValue).toLocaleString()}</span>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <Badge variant={consignment.status === 'stored' ? 'default' : 'secondary'} className="mb-2">
+                          <div className="flex flex-row md:flex-col md:text-right items-center md:items-end justify-between md:justify-start gap-2">
+                            <Badge variant={consignment.status === 'stored' ? 'default' : 'secondary'} className="text-xs">
                               {consignment.status}
                             </Badge>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => window.location.href = `/tracking/${consignment.consignmentNumber}`}
-                                data-testid={`button-track-${consignment.id}`}
-                              >
-                                <ExternalLink className="h-4 w-4 mr-1" />
-                                Track
-                              </Button>
-                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.location.href = `/tracking/${consignment.consignmentNumber}`}
+                              data-testid={`button-track-${consignment.id}`}
+                              className="text-xs md:text-sm px-2 md:px-3"
+                            >
+                              <ExternalLink className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                              Track
+                            </Button>
                           </div>
                         </div>
                       </Card>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h4 className="text-lg font-semibold mb-2">No consignments yet</h4>
-                    <p className="text-muted-foreground mb-4">
+                  <div className="text-center py-8 md:py-12 px-4">
+                    <Shield className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground mx-auto mb-4" />
+                    <h4 className="text-base md:text-lg font-semibold mb-2">No consignments yet</h4>
+                    <p className="text-sm md:text-base text-muted-foreground mb-4">
                       Create your first consignment to start storing gold securely.
                     </p>
-                    <Button onClick={() => window.location.href = "/consignment"} data-testid="button-create-first">
+                    <Button onClick={() => window.location.href = "/consignment"} data-testid="button-create-first" className="w-full md:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
                       Create First Consignment
                     </Button>
@@ -744,7 +743,7 @@ export default function Dashboard() {
           </TabsContent>
 
           {/* Certificates Tab */}
-          <TabsContent value="certificates" className="space-y-6" data-testid="certificates-content">
+          <TabsContent value="certificates" className="space-y-4 md:space-y-6" data-testid="certificates-content">
             <Card>
               <CardHeader>
                 <CardTitle>Storage Certificates</CardTitle>
@@ -782,7 +781,7 @@ export default function Dashboard() {
           </TabsContent>
 
           {/* Tracking Tab */}
-          <TabsContent value="tracking" className="space-y-6" data-testid="tracking-content">
+          <TabsContent value="tracking" className="space-y-4 md:space-y-6" data-testid="tracking-content">
             <Card>
               <CardHeader>
                 <CardTitle>Track Your Consignments</CardTitle>
@@ -832,7 +831,7 @@ export default function Dashboard() {
           </TabsContent>
 
           {/* Inheritance Tab */}
-          <TabsContent value="inheritance" className="space-y-6" data-testid="inheritance-content">
+          <TabsContent value="inheritance" className="space-y-4 md:space-y-6" data-testid="inheritance-content">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Will Builder */}
               <Card data-testid="will-builder">
