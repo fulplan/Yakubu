@@ -324,62 +324,16 @@ export default function Dashboard() {
 
           {/* Portfolio Tab */}
           <TabsContent value="portfolio" className="space-y-6" data-testid="portfolio-content">
-            {/* Live Gold Price Market Overview */}
-            <Card data-testid="live-gold-prices">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Coins className="h-5 w-5 mr-2 text-primary" />
-                  Live Gold Prices (LBMA/COMEX)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">USD per oz</p>
-                      <p className="text-2xl font-bold">${currentGoldPrice.toFixed(2)}</p>
-                      <p className={`text-sm ${goldPrices?.change24h?.usd >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {goldPrices?.change24h?.usd >= 0 ? '+' : ''}{goldPrices?.change24h?.usd?.toFixed(2)}%
-                      </p>
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      Last updated: {goldPrices?.lastUpdated ? new Date(goldPrices.lastUpdated).toLocaleTimeString() : 'Now'}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">GBP per oz</p>
-                      <p className="text-2xl font-bold">£{goldPrices?.gbp?.toFixed(2) || '1,628.00'}</p>
-                      <p className={`text-sm ${goldPrices?.change24h?.gbp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {goldPrices?.change24h?.gbp >= 0 ? '+' : ''}{goldPrices?.change24h?.gbp?.toFixed(2)}%
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <p className="text-sm text-muted-foreground">EUR per oz</p>
-                      <p className="text-2xl font-bold">€{goldPrices?.eur?.toFixed(2) || '1,885.00'}</p>
-                      <p className={`text-sm ${goldPrices?.change24h?.eur >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {goldPrices?.change24h?.eur >= 0 ? '+' : ''}{goldPrices?.change24h?.eur?.toFixed(2)}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Account Balance */}
-            <Card data-testid="account-balance">
-              <CardHeader>
-                <CardTitle className="flex items-center">
+            {/* Account Balance - Top Priority for Mobile */}
+            <Card data-testid="account-balance" className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-lg">
                   <Wallet className="h-5 w-5 mr-2 text-primary" />
                   Account Balance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-4">
+              <CardContent className="pt-0">
+                <div className="text-center py-2">
                   <p className="text-3xl font-bold text-primary">
                     ${accountBalance.balance ? accountBalance.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                   </p>
@@ -388,8 +342,13 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Portfolio Analytics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {/* Portfolio Summary Section - 2 Column Grid on Mobile */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+                Portfolio Summary
+              </h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               <Card data-testid="stat-total-value">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -455,7 +414,54 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </div>
+
+            {/* Live Gold Prices - Compact Section */}
+            <Card data-testid="live-gold-prices" className="border-muted">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-base">
+                  <Coins className="h-4 w-4 mr-2 text-primary" />
+                  Live Gold Prices (LBMA/COMEX)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">USD</p>
+                      <p className="text-lg font-bold">${currentGoldPrice.toFixed(2)}</p>
+                      <p className={`text-xs ${goldPrices?.change24h?.usd >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {goldPrices?.change24h?.usd >= 0 ? '+' : ''}{goldPrices?.change24h?.usd?.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">GBP</p>
+                      <p className="text-lg font-bold">£{goldPrices?.gbp?.toFixed(2) || '1,628.00'}</p>
+                      <p className={`text-xs ${goldPrices?.change24h?.gbp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {goldPrices?.change24h?.gbp >= 0 ? '+' : ''}{goldPrices?.change24h?.gbp?.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">EUR</p>
+                      <p className="text-lg font-bold">€{goldPrices?.eur?.toFixed(2) || '1,885.00'}</p>
+                      <p className={`text-xs ${goldPrices?.change24h?.eur >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {goldPrices?.change24h?.eur >= 0 ? '+' : ''}{goldPrices?.change24h?.eur?.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Last updated: {goldPrices?.lastUpdated ? new Date(goldPrices.lastUpdated).toLocaleTimeString() : 'Now'}
+                </p>
+              </CardContent>
+            </Card>
 
             {/* Real-time Portfolio Performance */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
