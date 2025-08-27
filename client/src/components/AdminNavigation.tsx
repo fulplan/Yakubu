@@ -22,13 +22,7 @@ export default function AdminNavigation({ goldPrice, user }: AdminNavigationProp
     }
   };
 
-  const adminNavItems = [
-    { href: "/", label: "Overview", icon: BarChart3 },
-    { href: "/admin/consignments", label: "Consignments", icon: Package },
-    { href: "/admin/claims", label: "Claims", icon: Gavel },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/support", label: "Support", icon: MessageSquare },
-  ];
+  // No navigation items in the top navbar - they're in the admin tabs
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-opacity-95" data-testid="admin-navigation">
@@ -48,26 +42,7 @@ export default function AdminNavigation({ goldPrice, user }: AdminNavigationProp
               </Button>
             </div>
             
-            {/* Desktop Navigation */}
-            <div className="hidden md:block ml-10">
-              <div className="flex items-baseline space-x-6">
-                {adminNavItems.map((item, index) => {
-                  const Icon = item.icon;
-                  return (
-                    <Button
-                      key={item.href}
-                      variant="ghost"
-                      className={`text-muted-foreground hover:text-foreground px-3 py-2 text-sm transition-colors flex items-center ${index === 0 ? 'text-primary font-medium' : ''}`}
-                      onClick={() => setLocation(item.href)}
-                      data-testid={`admin-nav-${item.label.toLowerCase()}`}
-                    >
-                      <Icon className="h-4 w-4 mr-2" />
-                      {item.label}
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* No navigation items in navbar - they're in the admin dashboard tabs */}
           </div>
 
           {/* Right side items */}
@@ -85,7 +60,7 @@ export default function AdminNavigation({ goldPrice, user }: AdminNavigationProp
               <div className="flex items-center px-3 py-1 bg-primary/10 rounded-lg">
                 <User className="h-4 w-4 mr-2 text-primary" />
                 <span className="text-sm font-medium text-primary">
-                  {user?.firstName || 'Admin'} (Admin)
+                  {user?.firstName || 'Admin'}
                 </span>
               </div>
               <Button
@@ -117,30 +92,9 @@ export default function AdminNavigation({ goldPrice, user }: AdminNavigationProp
                     </div>
                   </div>
                   
-                  {adminNavItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Button
-                        key={item.href}
-                        variant="ghost"
-                        className="justify-start"
-                        onClick={() => {
-                          setLocation(item.href);
-                          setIsMenuOpen(false);
-                        }}
-                        data-testid={`admin-mobile-nav-${item.label.toLowerCase()}`}
-                      >
-                        <Icon className="h-4 w-4 mr-3" />
-                        {item.label}
-                      </Button>
-                    );
-                  })}
-                  
-                  <hr className="my-4" />
-                  
                   <div className="flex items-center px-3 py-2">
                     <User className="h-4 w-4 mr-2" />
-                    <span className="text-sm">{user?.firstName || 'Admin'} (Admin)</span>
+                    <span className="text-sm">{user?.firstName || 'Admin'}</span>
                   </div>
                   
                   <Button

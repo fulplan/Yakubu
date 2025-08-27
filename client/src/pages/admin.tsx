@@ -151,10 +151,11 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-8" data-testid="admin-tabs">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="consignments" data-testid="tab-consignments">Consignments</TabsTrigger>
             <TabsTrigger value="claims" data-testid="tab-claims">Claims</TabsTrigger>
+            <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
             <TabsTrigger value="support" data-testid="tab-support">Support</TabsTrigger>
             <TabsTrigger value="analytics" data-testid="tab-analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -491,6 +492,30 @@ export default function Admin() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-6" data-testid="users-content">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  User Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h4 className="text-lg font-semibold mb-2">User Administration</h4>
+                  <p className="text-muted-foreground mb-4">
+                    Comprehensive user management features will be implemented here including user roles, permissions, and account management.
+                  </p>
+                  <Button variant="outline" data-testid="button-manage-users">
+                    Manage Users
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Support Tab */}
