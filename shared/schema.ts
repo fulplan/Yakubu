@@ -124,6 +124,19 @@ export const accountTransactions = pgTable("account_transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Gold holdings table for managing customer gold assets
+export const goldHoldings = pgTable("gold_holdings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // 'credit' or 'debit' 
+  weight: decimal("weight", { precision: 10, scale: 4 }).notNull(), // in ounces
+  purity: decimal("purity", { precision: 5, scale: 3 }).notNull(), // percentage (99.9 = 99.9%)
+  description: text("description").notNull(),
+  purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }), // price at time of acquisition
+  performedBy: varchar("performed_by").notNull().references(() => users.id), // admin who performed the action
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Storage plans table
 export const storagePlans = pgTable("storage_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -250,5 +263,13 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 
 export type InsertAccountTransaction = z.infer<typeof insertAccountTransactionSchema>;
 export type AccountTransaction = typeof accountTransactions.$inferSelect;
+
+export const insertGoldHoldingSchema = createInsertSchema(goldHoldings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertGoldHolding = z.infer<typeof insertGoldHoldingSchema>;
+export type GoldHolding = typeof goldHoldings.$inferSelect;
 
 export type StoragePlan = typeof storagePlans.$inferSelect;

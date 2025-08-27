@@ -368,6 +368,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Gold holding routes for admin gold management
+  app.post('/api/admin/users/:id/credit-gold', isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const { weight, purity, description, purchasePrice } = req.body;
+      
+      if (!weight || weight <= 0) {
+        return res.status(400).json({ message: "Valid weight is required" });
+      }
+      
+      if (!purity || purity <= 0 || purity > 100) {
+        return res.status(400).json({ message: "Valid purity (0-100%) is required" });
+      }
+
+      const goldHolding = await storage.createGoldHolding({
+        userId,
+        type: 'credit',
+        weight: weight.toString(),
+        purity: purity.toString(),
+        description: description || 'Gold credit by admin',
+        purchasePrice: purchasePrice ? purchasePrice.toString() : null,
+        performedBy: req.user.id,
+      });
+
+      res.status(201).json(goldHolding);
+    } catch (error) {
+      console.error("Error crediting gold:", error);
+      res.status(500).json({ message: "Failed to credit gold" });
+    }
+  });
+
+  app.post('/api/admin/users/:id/debit-gold', isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const { weight, purity, description } = req.body;
+      
+      if (!weight || weight <= 0) {
+        return res.status(400).json({ message: "Valid weight is required" });
+      }
+      
+      if (!purity || purity <= 0 || purity > 100) {
+        return res.status(400).json({ message: "Valid purity (0-100%) is required" });
+      }
+
+      const goldHolding = await storage.createGoldHolding({
+        userId,
+        type: 'debit',
+        weight: weight.toString(),
+        purity: purity.toString(),
+        description: description || 'Gold debit by admin',
+        purchasePrice: null,
+        performedBy: req.user.id,
+      });
+
+      res.status(201).json(goldHolding);
+    } catch (error) {
+      console.error("Error debiting gold:", error);
+      res.status(500).json({ message: "Failed to debit gold" });
+    }
+  });
+
+  app.get('/api/gold/balance', isAuthenticated, async (req: any, res) => {
+    try {
+      const goldBalance = await storage.getUserGoldBalance(req.user.id);
+      res.json(goldBalance);
+    } catch (error) {
+      console.error("Error fetching gold balance:", error);
+      res.status(500).json({ message: "Failed to fetch gold balance" });
+    }
+  });
+
+  app.get('/api/gold/holdings', isAuthenticated, async (req: any, res) => {
+    try {
+      const holdings = await storage.getUserGoldHoldings(req.user.id);
+      res.json(holdings);
+    } catch (error) {
+      console.error("Error fetching gold holdings:", error);
+      res.status(500).json({ message: "Failed to fetch gold holdings" });
+    }
+  });
+
   // Chat APIs
   app.get('/api/chat/:sessionId', async (req, res) => {
     try {

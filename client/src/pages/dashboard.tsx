@@ -82,6 +82,18 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  // Fetch user gold balance
+  const { data: goldBalance = { totalWeight: 0, totalValue: 0, avgPurity: 0, activeItems: 0 } } = useQuery({
+    queryKey: ["/api/gold/balance"],
+    enabled: !!user,
+  });
+
+  // Fetch user gold holdings
+  const { data: goldHoldings = [] } = useQuery({
+    queryKey: ["/api/gold/holdings"],
+    enabled: !!user,
+  });
+
   // Mutations
   const createWillMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -240,9 +252,11 @@ export default function Dashboard() {
     return null;
   }
 
-  const totalWeight = consignments.reduce((sum: number, c: any) => sum + parseFloat(c.weight || 0), 0);
-  const totalValue = consignments.reduce((sum: number, c: any) => sum + parseFloat(c.estimatedValue || 0), 0);
   const currentGoldPrice = goldPrices?.usd || 2034.50;
+  const totalWeight = goldBalance.totalWeight || 0;
+  const totalValue = goldBalance.totalValue || 0;
+  const currentMarketValue = totalWeight * currentGoldPrice;
+  const profitLoss = currentMarketValue - totalValue;
   const totalAllocation = digitalWill?.beneficiaries?.reduce((sum: number, b: any) => sum + b.percentage, 0) || 0;
 
   return (
@@ -346,10 +360,10 @@ export default function Dashboard() {
                     <div>
                       <p className="text-sm text-muted-foreground">Portfolio Value</p>
                       <p className="text-3xl font-bold text-primary">
-                        ${totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                        ${currentMarketValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Current market value
+                      <p className={`text-xs mt-1 ${profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString('en-US', { maximumFractionDigits: 0 })} profit
                       </p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-primary" />
@@ -362,9 +376,9 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Gold Holdings</p>
-                      <p className="text-3xl font-bold">{totalWeight.toFixed(3)} oz</p>
+                      <p className="text-3xl font-bold">{totalWeight.toFixed(4)} oz</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Physical gold stored
+                        {goldBalance.avgPurity.toFixed(1)}% avg purity | {goldBalance.activeItems} items
                       </p>
                     </div>
                     <Coins className="h-8 w-8 text-primary" />
@@ -417,11 +431,17 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
                       <span className="text-sm font-medium">Current Market Value</span>
-                      <span className="font-bold text-primary">${(totalWeight * currentGoldPrice).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                      <span className="font-bold text-primary">${currentMarketValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
                       <span className="text-sm font-medium">Original Investment</span>
                       <span className="font-bold">${totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <span className="text-sm font-medium">Profit/Loss</span>
+                      <span className={`font-bold ${profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
                       <span className="text-sm font-medium">Unrealized P&L</span>

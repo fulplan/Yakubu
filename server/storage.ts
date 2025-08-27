@@ -7,6 +7,7 @@ import {
   inheritanceClaims,
   chatMessages,
   accountTransactions,
+  goldHoldings,
   storagePlans,
   type User,
   type UpsertUser,
@@ -23,6 +24,8 @@ import {
   type InsertChatMessage,
   type AccountTransaction,
   type InsertAccountTransaction,
+  type GoldHolding,
+  type InsertGoldHolding,
   type StoragePlan,
 } from "@shared/schema";
 import { db } from "./db";
@@ -73,6 +76,11 @@ export interface IStorage {
   createAccountTransaction(transaction: InsertAccountTransaction): Promise<AccountTransaction>;
   getUserAccountTransactions(userId: string): Promise<AccountTransaction[]>;
   getUserAccountBalance(userId: string): Promise<number>;
+  
+  // Gold holding operations
+  createGoldHolding(holding: InsertGoldHolding): Promise<GoldHolding>;
+  getUserGoldHoldings(userId: string): Promise<GoldHolding[]>;
+  getUserGoldBalance(userId: string): Promise<{totalWeight: number; totalValue: number; avgPurity: number; activeItems: number}>;
   
   // Storage plans
   getStoragePlans(): Promise<StoragePlan[]>;
@@ -345,6 +353,59 @@ export class DatabaseStorage implements IStorage {
       }
     }, 0);
     return balance;
+  }
+
+  // Gold holding operations
+  async createGoldHolding(holding: InsertGoldHolding): Promise<GoldHolding> {
+    const [goldHolding] = await db
+      .insert(goldHoldings)
+      .values(holding)
+      .returning();
+    return goldHolding;
+  }
+
+  async getUserGoldHoldings(userId: string): Promise<GoldHolding[]> {
+    return db
+      .select()
+      .from(goldHoldings)
+      .where(eq(goldHoldings.userId, userId))
+      .orderBy(desc(goldHoldings.createdAt));
+  }
+
+  async getUserGoldBalance(userId: string): Promise<{totalWeight: number; totalValue: number; avgPurity: number; activeItems: number}> {
+    const holdings = await this.getUserGoldHoldings(userId);
+    
+    let totalWeight = 0;
+    let totalValue = 0;
+    let totalPurityWeight = 0; // for weighted average purity calculation
+    let activeItems = 0;
+
+    holdings.forEach(holding => {
+      const weight = parseFloat(holding.weight);
+      const purity = parseFloat(holding.purity);
+      const purchasePrice = parseFloat(holding.purchasePrice || '0');
+      
+      if (holding.type === 'credit') {
+        totalWeight += weight;
+        totalValue += purchasePrice;
+        totalPurityWeight += (weight * purity);
+        activeItems++;
+      } else {
+        totalWeight -= weight;
+        totalValue -= purchasePrice;
+        totalPurityWeight -= (weight * purity);
+        activeItems = Math.max(0, activeItems - 1);
+      }
+    });
+
+    const avgPurity = totalWeight > 0 ? totalPurityWeight / totalWeight : 0;
+
+    return {
+      totalWeight: Math.max(0, totalWeight),
+      totalValue: Math.max(0, totalValue),
+      avgPurity: Math.max(0, avgPurity),
+      activeItems: Math.max(0, activeItems)
+    };
   }
 }
 

@@ -47,6 +47,12 @@ function UserManagement() {
   const [transactionType, setTransactionType] = useState<'credit' | 'debit'>('credit');
   const [transactionAmount, setTransactionAmount] = useState('');
   const [transactionDescription, setTransactionDescription] = useState('');
+  const [goldDialogOpen, setGoldDialogOpen] = useState(false);
+  const [goldTransactionType, setGoldTransactionType] = useState<'credit' | 'debit'>('credit');
+  const [goldWeight, setGoldWeight] = useState('');
+  const [goldPurity, setGoldPurity] = useState('');
+  const [goldDescription, setGoldDescription] = useState('');
+  const [goldPurchasePrice, setGoldPurchasePrice] = useState('');
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -152,6 +158,44 @@ function UserManagement() {
     },
   });
 
+  // Gold credit/debit mutation
+  const goldTransactionMutation = useMutation({
+    mutationFn: async ({ userId, type, weight, purity, description, purchasePrice }: { 
+      userId: string; 
+      type: 'credit' | 'debit'; 
+      weight: number; 
+      purity: number; 
+      description: string; 
+      purchasePrice?: number 
+    }) => {
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/${type}-gold`, { 
+        weight, 
+        purity, 
+        description, 
+        purchasePrice 
+      });
+      return response.json();
+    },
+    onSuccess: (_, { type }) => {
+      toast({
+        title: "Gold Transaction Successful",
+        description: `Gold ${type} completed successfully.`,
+      });
+      setGoldDialogOpen(false);
+      setGoldWeight('');
+      setGoldPurity('');
+      setGoldDescription('');
+      setGoldPurchasePrice('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Gold Transaction Failed",
+        description: error.message || "An error occurred during the gold transaction.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateUser = () => {
     if (!newUser.email || !newUser.password || !newUser.firstName || !newUser.lastName) {
       toast({
@@ -190,6 +234,39 @@ function UserManagement() {
       type: transactionType,
       amount,
       description: transactionDescription || `Account ${transactionType} by admin`
+    });
+  };
+
+  const handleGoldCreditDebit = () => {
+    const weight = parseFloat(goldWeight);
+    const purity = parseFloat(goldPurity);
+    const purchasePrice = goldPurchasePrice ? parseFloat(goldPurchasePrice) : undefined;
+    
+    if (!weight || weight <= 0) {
+      toast({
+        title: "Invalid Weight",
+        description: "Please enter a valid weight greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!purity || purity <= 0 || purity > 100) {
+      toast({
+        title: "Invalid Purity",
+        description: "Please enter a valid purity between 0 and 100%.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    goldTransactionMutation.mutate({
+      userId: selectedUserId,
+      type: goldTransactionType,
+      weight,
+      purity,
+      description: goldDescription || `Gold ${goldTransactionType} by admin`,
+      purchasePrice
     });
   };
 
@@ -445,6 +522,19 @@ function UserManagement() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => {
+                          setSelectedUserId(user.id);
+                          setGoldTransactionType('credit');
+                          setGoldDialogOpen(true);
+                        }}
+                        data-testid={`button-gold-credit-${user.id}`}
+                      >
+                        <Shield className="h-4 w-4 mr-1" />
+                        Gold+
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleDeleteUser(user.id)}
                         disabled={deleteUserMutation.isPending}
                         data-testid={`button-delete-${user.id}`}
@@ -518,6 +608,91 @@ function UserManagement() {
                   <>
                     {transactionType === 'credit' ? <Plus className="h-4 w-4 mr-2" /> : <Coins className="h-4 w-4 mr-2" />}
                     {transactionType === 'credit' ? 'Credit Account' : 'Debit Account'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Gold Credit/Debit Dialog */}
+      <Dialog open={goldDialogOpen} onOpenChange={setGoldDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {goldTransactionType === 'credit' ? 'Credit Gold Holdings' : 'Debit Gold Holdings'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Weight (oz) *</label>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  placeholder="0.0000"
+                  value={goldWeight}
+                  onChange={(e) => setGoldWeight(e.target.value)}
+                  data-testid="input-gold-weight"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Purity (%) *</label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  placeholder="99.9"
+                  value={goldPurity}
+                  onChange={(e) => setGoldPurity(e.target.value)}
+                  data-testid="input-gold-purity"
+                />
+              </div>
+            </div>
+            {goldTransactionType === 'credit' && (
+              <div>
+                <label className="text-sm font-medium">Purchase Price ($)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={goldPurchasePrice}
+                  onChange={(e) => setGoldPurchasePrice(e.target.value)}
+                  data-testid="input-gold-purchase-price"
+                />
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                placeholder="Enter transaction description..."
+                value={goldDescription}
+                onChange={(e) => setGoldDescription(e.target.value)}
+                data-testid="textarea-gold-description"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setGoldDialogOpen(false)}
+                data-testid="button-cancel-gold-transaction"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleGoldCreditDebit}
+                disabled={goldTransactionMutation.isPending}
+                data-testid="button-confirm-gold-transaction"
+              >
+                {goldTransactionMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {goldTransactionType === 'credit' ? <Shield className="h-4 w-4 mr-2" /> : <Coins className="h-4 w-4 mr-2" />}
+                    {goldTransactionType === 'credit' ? 'Credit Gold' : 'Debit Gold'}
                   </>
                 )}
               </Button>
