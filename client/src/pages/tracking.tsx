@@ -1,0 +1,248 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, QrCode, Download, CheckCircle, Shield, Award, AlertCircle } from "lucide-react";
+
+interface TrackingPageProps {
+  params?: { consignmentNumber?: string };
+}
+
+export default function Tracking({ params }: TrackingPageProps) {
+  const [trackingId, setTrackingId] = useState(params?.consignmentNumber || "");
+  const [searchedId, setSearchedId] = useState(params?.consignmentNumber || "");
+
+  const { data: trackingData, isLoading, error } = useQuery({
+    queryKey: ["/api/tracking", searchedId],
+    enabled: !!searchedId,
+    retry: false,
+  });
+
+  const handleSearch = () => {
+    if (trackingId.trim()) {
+      setSearchedId(trackingId.trim());
+    }
+  };
+
+  const handleScanQR = () => {
+    // In a real app, this would open QR scanner
+    alert("QR Scanner would open here");
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'stored':
+        return 'bg-green-100 text-green-800';
+      case 'verified':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'stored':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'verified':
+        return <Shield className="h-4 w-4" />;
+      case 'pending':
+        return <AlertCircle className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation 
+        goldPrice={2034.50}
+        onLogin={() => window.location.href = "/api/login"}
+        onRegister={() => window.location.href = "/api/login"}
+      />
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="tracking-page">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-6">Track Your Consignment</h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Enter your consignment ID or scan the QR code to view real-time status and audit trail
+          </p>
+        </div>
+
+        {/* Search Box */}
+        <Card className="mb-8" data-testid="tracking-search">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <Input
+                type="text"
+                placeholder="Enter Consignment ID (e.g., GV-2024-001234)"
+                value={trackingId}
+                onChange={(e) => setTrackingId(e.target.value)}
+                className="flex-1"
+                data-testid="input-tracking-id"
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <Button 
+                onClick={handleSearch} 
+                className="whitespace-nowrap"
+                disabled={!trackingId.trim() || isLoading}
+                data-testid="button-track"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Track Now
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="mt-4 text-center">
+              <Button 
+                variant="link" 
+                onClick={handleScanQR}
+                className="text-primary hover:text-primary/80 text-sm"
+                data-testid="button-scan-qr"
+              >
+                <QrCode className="h-4 w-4 mr-1" />
+                Or scan QR code from certificate
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tracking Results */}
+        {error && (
+          <Card className="mb-8" data-testid="tracking-error">
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Consignment Not Found</h3>
+              <p className="text-muted-foreground">
+                Please check your consignment ID and try again. Make sure to include the full ID (e.g., GV-2024-001234).
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {trackingData && (
+          <Card className="mb-8" data-testid="tracking-results">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl font-bold">
+                    Consignment #{trackingData.consignment.consignmentNumber}
+                  </CardTitle>
+                  <p className="text-muted-foreground mt-1">
+                    {trackingData.consignment.description}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <Badge 
+                    className={`${getStatusColor(trackingData.consignment.status)} mb-2`}
+                    data-testid="status-badge"
+                  >
+                    {getStatusIcon(trackingData.consignment.status)}
+                    <span className="ml-1 capitalize">{trackingData.consignment.status}</span>
+                  </Badge>
+                  <div className="text-sm text-muted-foreground">
+                    Weight: {trackingData.consignment.weight} oz
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-6">
+              {/* Timeline */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Audit Trail</h3>
+                <div className="space-y-4" data-testid="audit-trail">
+                  {trackingData.events.map((event: any, index: number) => (
+                    <div key={event.id} className="flex items-start" data-testid={`event-${index}`}>
+                      <div className="flex-shrink-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                        {event.eventType === 'created' && <CheckCircle className="h-5 w-5 text-primary-foreground" />}
+                        {event.eventType === 'verified' && <Shield className="h-5 w-5 text-primary-foreground" />}
+                        {event.eventType === 'stored' && <Award className="h-5 w-5 text-primary-foreground" />}
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold">{event.description}</h4>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(event.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                        {event.metadata && (
+                          <p className="text-muted-foreground text-sm mt-1">
+                            Additional details available in metadata
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Certificate Download */}
+              <Card className="bg-muted">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold">Storage Certificate</h4>
+                      <p className="text-sm text-muted-foreground">
+                        PDF certificate with QR tracking code
+                      </p>
+                    </div>
+                    <Button data-testid="button-download-certificate">
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Sample tracking for demo when no specific ID is searched */}
+        {!searchedId && (
+          <Card className="mb-8" data-testid="tracking-demo">
+            <CardHeader>
+              <CardTitle>Try a Sample Tracking</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Want to see how tracking works? Try searching for our sample consignment:
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="bg-muted px-2 py-1 rounded text-sm">GV-2024-001234</code>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setTrackingId("GV-2024-001234");
+                    setSearchedId("GV-2024-001234");
+                  }}
+                  data-testid="button-try-sample"
+                >
+                  Try Sample
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <Footer />
+    </div>
+  );
+}

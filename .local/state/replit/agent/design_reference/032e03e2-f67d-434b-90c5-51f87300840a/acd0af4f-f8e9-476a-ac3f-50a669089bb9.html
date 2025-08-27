@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldVault Pro - Premium Gold Storage & Investment Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                    gold: {
+                        50: '#fefdf8',
+                        100: '#fdf9e8',
+                        200: '#faf0c4',
+                        300: '#f6e295',
+                        400: '#f1d065',
+                        500: '#D4AF37',
+                        600: '#b8941f',
+                        700: '#967318',
+                        800: '#785c19',
+                        900: '#644c1a',
+                    }
+                },
+                fontFamily: {
+                    sans: ['Inter', 'system-ui', 'sans-serif'],
+                    serif: ['Playfair Display', 'serif'],
+                }
+            }
+        }
+    };
+    </script>
+    <style>
+        :root {
+            --background: hsl(210 40% 98%);
+            --foreground: hsl(210 40% 8%);
+            --card: hsl(210 40% 100%);
+            --card-foreground: hsl(210 40% 15%);
+            --popover: hsl(210 40% 100%);
+            --popover-foreground: hsl(210 40% 15%);
+            --primary: hsl(45 85% 47%);
+            --primary-foreground: hsl(210 40% 98%);
+            --secondary: hsl(210 40% 96%);
+            --secondary-foreground: hsl(210 40% 9%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(210 40% 45%);
+            --accent: hsl(210 40% 96%);
+            --accent-foreground: hsl(210 40% 9%);
+            --destructive: hsl(0 84% 60%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(214 32% 91%);
+            --input: hsl(214 32% 91%);
+            --ring: hsl(45 85% 47%);
+            --radius: 0.75rem;
+        }
+        
+        .dark {
+            --background: hsl(210 40% 2%);
+            --foreground: hsl(210 40% 95%);
+            --card: hsl(210 40% 4%);
+            --card-foreground: hsl(210 40% 95%);
+            --popover: hsl(210 40% 4%);
+            --popover-foreground: hsl(210 40% 95%);
+            --primary: hsl(45 85% 47%);
+            --primary-foreground: hsl(210 40% 2%);
+            --secondary: hsl(210 40% 10%);
+            --secondary-foreground: hsl(210 40% 95%);
+            --muted: hsl(210 40% 10%);
+            --muted-foreground: hsl(210 40% 55%);
+            --accent: hsl(210 40% 10%);
+            --accent-foreground: hsl(210 40% 95%);
+            --destructive: hsl(0 84% 60%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(210 40% 18%);
+            --input: hsl(210 40% 18%);
+            --ring: hsl(45 85% 47%);
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+        .hero-gradient {
+            background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(26,26,26,0.9) 100%);
+        }
+        
+        .gold-gradient {
+            background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%);
+        }
+        
+        .carousel-slide {
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .gold-shimmer {
+            background: linear-gradient(90deg, #D4AF37, #FFD700, #D4AF37);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .chart-container {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(255, 215, 0, 0.1) 100%);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-background text-foreground font-sans">
+    <!-- Navigation -->
+    <!-- @COMPONENT: Navigation [main site navigation] -->
+    <nav class="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-2xl font-serif font-bold text-primary">
+                            <i class="fas fa-shield-alt mr-2"></i>GoldVault Pro
+                        </h1>
+                    </div>
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-8">
+                            <a href="#home" class="text-primary font-medium px-3 py-2 text-sm">Home</a>
+                            <a href="#services" class="text-muted-foreground hover:text-foreground px-3 py-2 text-sm transition-colors">Services</a>
+                            <a href="#pricing" class="text-muted-foreground hover:text-foreground px-3 py-2 text-sm transition-colors">Pricing</a>
+                            <a href="#tracking" class="text-muted-foreground hover:text-foreground px-3 py-2 text-sm transition-colors">Tracking</a>
+                            <a href="#about" class="text-muted-foreground hover:text-foreground px-3 py-2 text-sm transition-colors">About</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-4">
+                    <!-- @STATE: goldPrice:number = 2034.50 -->
+                    <div class="flex items-center bg-muted rounded-lg px-3 py-1">
+                        <i class="fas fa-coins text-primary mr-2"></i>
+                        <span class="text-sm font-medium">Gold: $<span data-bind="goldPrice">2,034.50</span>/oz</span>
+                    </div>
+                    <button data-event="click:openLogin" class="text-muted-foreground hover:text-foreground font-medium text-sm">Login</button>
+                    <button data-event="click:openRegister" class="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium text-sm transition-colors">
+                        Get Started
+                    </button>
+                </div>
+                <div class="md:hidden">
+                    <button data-event="click:toggleMenu" class="text-muted-foreground hover:text-foreground">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- @END_COMPONENT: Navigation -->
+
+    <!-- Hero Section with Carousel -->
+    <!-- @COMPONENT: HeroCarousel [rotating hero images with gold storage facilities] -->
+    <section id="home" class="relative h-screen overflow-hidden">
+        <!-- @MAP: heroSlides.map(slide => ( -->
+        <!-- Modern gold storage vault with high-tech security systems -->
+        <div class="carousel-slide absolute inset-0 opacity-100" style="background-image: url('https://images.unsplash.com/photo-1576086213369-97a306d36557?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2000&h=1000'); background-size: cover; background-position: center;">
+            <div class="hero-gradient absolute inset-0"></div>
+            <div class="relative h-full flex items-center justify-center text-center">
+                <div class="max-w-4xl mx-auto px-4">
+                    <h1 class="text-5xl md:text-7xl font-serif font-bold text-white mb-6 fade-in">
+                        Secure Your <span class="text-primary">Gold</span> Legacy
+                    </h1>
+                    <p class="text-xl md:text-2xl text-gray-200 mb-8 fade-in">
+                        Professional gold storage, inheritance planning, and investment services backed by world-class security
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center fade-in">
+                        <button data-event="click:startConsignment" class="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105">
+                            <i class="fas fa-plus-circle mr-2"></i>Consign Gold Now
+                        </button>
+                        <button data-event="click:viewPricing" class="border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg transition-all">
+                            View Pricing Plans
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_MAP -->
+        
+        <!-- Carousel Controls -->
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2">
+            <button class="w-3 h-3 rounded-full bg-primary"></button>
+            <button class="w-3 h-3 rounded-full bg-white/50"></button>
+            <button class="w-3 h-3 rounded-full bg-white/50"></button>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: HeroCarousel -->
+
+    <!-- Trust Indicators -->
+    <!-- @COMPONENT: TrustBadges [vault certifications and insurance] -->
+    <section class="py-12 bg-muted">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center">
+                <div class="text-center">
+                    <i class="fas fa-shield-check text-3xl text-primary mb-2"></i>
+                    <p class="font-semibold">LBMA Certified</p>
+                    <p class="text-sm text-muted-foreground">London Bullion Market</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-lock text-3xl text-primary mb-2"></i>
+                    <p class="font-semibold">$100M Insured</p>
+                    <p class="text-sm text-muted-foreground">Lloyd's of London</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-university text-3xl text-primary mb-2"></i>
+                    <p class="font-semibold">Bank-Grade Security</p>
+                    <p class="text-sm text-muted-foreground">Tier 4 Data Center</p>
+                </div>
+                <div class="text-center">
+                    <i class="fas fa-award text-3xl text-primary mb-2"></i>
+                    <p class="font-semibold">ISO 27001</p>
+                    <p class="text-sm text-muted-foreground">Information Security</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: TrustBadges -->
+
+    <!-- Live Gold Prices -->
+    <!-- @COMPONENT: LivePrices [real-time gold price display] -->
+    <section class="py-16 bg-background">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-serif font-bold mb-4">Live Gold Market Prices</h2>
+                <p class="text-muted-foreground text-lg">Real-time pricing from LBMA and COMEX exchanges</p>
+            </div>
+            
+            <div class="bg-card rounded-2xl shadow-lg border border-border p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center p-6 bg-muted rounded-xl">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-dollar-sign text-2xl text-primary mr-2"></i>
+                            <span class="text-sm font-medium text-muted-foreground">USD</span>
+                        </div>
+                        <div class="text-3xl font-bold mb-2" data-bind="prices.usd">$2,034.50</div>
+                        <div class="flex items-center justify-center text-green-600">
+                            <i class="fas fa-arrow-up text-sm mr-1"></i>
+                            <span class="text-sm">+1.2%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center p-6 bg-muted rounded-xl">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-pound-sign text-2xl text-primary mr-2"></i>
+                            <span class="text-sm font-medium text-muted-foreground">GBP</span>
+                        </div>
+                        <div class="text-3xl font-bold mb-2" data-bind="prices.gbp">£1,627.80</div>
+                        <div class="flex items-center justify-center text-green-600">
+                            <i class="fas fa-arrow-up text-sm mr-1"></i>
+                            <span class="text-sm">+0.8%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center p-6 bg-muted rounded-xl">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-euro-sign text-2xl text-primary mr-2"></i>
+                            <span class="text-sm font-medium text-muted-foreground">EUR</span>
+                        </div>
+                        <div class="text-3xl font-bold mb-2" data-bind="prices.eur">€1,885.40</div>
+                        <div class="flex items-center justify-center text-red-600">
+                            <i class="fas fa-arrow-down text-sm mr-1"></i>
+                            <span class="text-sm">-0.3%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Price Chart -->
+                <div class="mt-8 chart-container rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">24-Hour Price Movement</h3>
+                        <div class="text-sm text-muted-foreground">Last updated: <span data-bind="lastUpdated">2 minutes ago</span></div>
+                    </div>
+                    <!-- @FUNCTIONALITY: This should implement a real-time price chart using Chart.js or similar -->
+                    <div class="h-64 bg-background/50 rounded-lg flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line text-4xl text-primary mb-2"></i>
+                            <p class="text-muted-foreground">Interactive price chart loads here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: LivePrices -->
+
+    <!-- Services Section -->
+    <!-- @COMPONENT: Services [detailed service offerings] -->
+    <section id="services" class="py-20 bg-muted">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-serif font-bold mb-6">Our Premium Services</h2>
+                <p class="text-xl text-muted-foreground max-w-3xl mx-auto">Comprehensive gold storage, investment, and inheritance solutions designed for the discerning investor</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Gold Storage Service -->
+                <div class="bg-card rounded-2xl shadow-lg border border-border overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <!-- Professional secure gold storage facility interior -->
+                    <div class="h-64 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1551836022-deb4988cc6c0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600');">
+                        <div class="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
+                        <div class="absolute top-4 left-4">
+                            <div class="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                                Most Popular
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-serif font-bold mb-4">Secure Gold Storage</h3>
+                        <p class="text-muted-foreground mb-6">Professional-grade storage facilities with 24/7 monitoring, climate control, and comprehensive insurance coverage.</p>
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Bank-grade vault security</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Individual storage allocation</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Digital certificates & QR tracking</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Full insurance coverage</li>
+                        </ul>
+                        <button data-event="click:learnMore" data-service="storage" class="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-lg font-semibold transition-colors">
+                            Learn More
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gold Consignment Service -->
+                <div class="bg-card rounded-2xl shadow-lg border border-border overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <!-- Gold bullion bars and coins arranged professionally -->
+                    <div class="h-64 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1610375461246-83df859d849d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600');">
+                        <div class="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-serif font-bold mb-4">Gold Consignment</h3>
+                        <p class="text-muted-foreground mb-6">Easy consignment process with professional valuation, documentation, and secure transfer to our facilities.</p>
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Professional gold appraisal</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Secure pickup & transport</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Digital documentation</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Instant online tracking</li>
+                        </ul>
+                        <button data-event="click:startConsignment" class="w-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground py-3 rounded-lg font-semibold transition-colors">
+                            Start Consignment
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Inheritance Planning Service -->
+                <div class="bg-card rounded-2xl shadow-lg border border-border overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <!-- Family or professional consultation setting with gold certificates -->
+                    <div class="h-64 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600');">
+                        <div class="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-serif font-bold mb-4">Digital Inheritance</h3>
+                        <p class="text-muted-foreground mb-6">Comprehensive digital will creation and inheritance planning for your gold assets with legal verification.</p>
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Digital will builder</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Heir verification process</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Legal documentation</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-primary mr-2"></i>Claims processing</li>
+                        </ul>
+                        <button data-event="click:learnMore" data-service="inheritance" class="w-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground py-3 rounded-lg font-semibold transition-colors">
+                            Plan Inheritance
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: Services -->
+
+    <!-- Interactive Pricing Calculator -->
+    <!-- @COMPONENT: PricingCalculator [storage plan calculator] -->
+    <section id="pricing" class="py-20 bg-background">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-serif font-bold mb-6">Storage Pricing Calculator</h2>
+                <p class="text-xl text-muted-foreground max-w-3xl mx-auto">Transparent pricing based on value and storage duration. Calculate your costs instantly.</p>
+            </div>
+            
+            <div class="bg-card rounded-2xl shadow-lg border border-border p-8 md:p-12 max-w-4xl mx-auto">
+                <!-- @STATE: goldValue:number = 50000, duration:number = 12, insurance:boolean = true -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-6">Calculate Your Storage Costs</h3>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Gold Value (USD)</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                    <input data-bind="goldValue" type="number" class="w-full pl-8 pr-4 py-3 border border-border rounded-lg bg-input focus:ring-2 focus:ring-ring focus:border-ring" placeholder="50,000" min="1000" step="1000">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Storage Duration</label>
+                                <select data-bind="duration" class="w-full px-4 py-3 border border-border rounded-lg bg-input focus:ring-2 focus:ring-ring focus:border-ring">
+                                    <option value="6">6 months</option>
+                                    <option value="12" selected>12 months</option>
+                                    <option value="24">24 months</option>
+                                    <option value="36">36 months</option>
+                                    <option value="60">60 months</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Insurance Coverage</label>
+                                <div class="flex items-center space-x-4">
+                                    <label class="flex items-center">
+                                        <input data-bind="insurance" type="checkbox" checked class="mr-2 w-4 h-4 text-primary border border-border rounded focus:ring-ring">
+                                        <span class="text-sm">Full Value Insurance (+0.1% annually)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Storage Plan</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center p-3 border border-border rounded-lg hover:bg-muted cursor-pointer">
+                                        <input type="radio" name="plan" value="standard" class="mr-3 text-primary" checked>
+                                        <div>
+                                            <div class="font-medium">Standard</div>
+                                            <div class="text-sm text-muted-foreground">0.5% annually + insurance</div>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-center p-3 border border-border rounded-lg hover:bg-muted cursor-pointer">
+                                        <input type="radio" name="plan" value="premium" class="mr-3 text-primary">
+                                        <div>
+                                            <div class="font-medium">Premium</div>
+                                            <div class="text-sm text-muted-foreground">0.8% annually + premium insurance</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-muted rounded-xl p-6">
+                        <h3 class="text-xl font-semibold mb-6">Cost Breakdown</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span>Storage Fee (12 months)</span>
+                                <span data-bind="storageFee" class="font-semibold">$250.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Insurance (Annual)</span>
+                                <span data-bind="insuranceFee" class="font-semibold">$50.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Setup Fee</span>
+                                <span class="font-semibold">$25.00</span>
+                            </div>
+                            <hr class="border-border">
+                            <div class="flex justify-between text-lg">
+                                <span class="font-bold">Total Annual Cost</span>
+                                <span data-bind="totalCost" class="font-bold text-primary">$325.00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 p-4 bg-primary/10 rounded-lg">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-info-circle text-primary mr-2"></i>
+                                <span class="font-medium">Includes:</span>
+                            </div>
+                            <ul class="text-sm space-y-1 ml-6">
+                                <li>• 24/7 vault monitoring</li>
+                                <li>• Individual allocation</li>
+                                <li>• Digital certificates</li>
+                                <li>• Online tracking</li>
+                                <li>• Free annual inspection</li>
+                            </ul>
+                        </div>
+                        
+                        <button data-event="click:getPriceQuote" class="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-lg font-semibold transition-colors">
+                            Get Official Quote
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: PricingCalculator -->
+
+    <!-- User Dashboard Preview -->
+    <!-- @COMPONENT: Dashboard [user gold holdings dashboard] -->
+    <section class="py-20 bg-muted">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-serif font-bold mb-6">Your Gold Portfolio Dashboard</h2>
+                <p class="text-xl text-muted-foreground max-w-3xl mx-auto">Monitor your gold investments, track storage, and manage your digital assets from one secure platform</p>
+            </div>
+            
+            <!-- Dashboard Demo -->
+            <div class="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
+                <!-- Dashboard Header -->
+                <div class="bg-primary text-primary-foreground p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-2xl font-bold">Welcome back, <span data-bind="user.name">John Smith</span></h3>
+                            <p class="text-primary-foreground/80">Portfolio Overview</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold" data-bind="portfolio.totalValue">$127,450</div>
+                            <div class="text-sm text-primary-foreground/80">Total Portfolio Value</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dashboard Content -->
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <!-- Portfolio Stats -->
+                        <div class="bg-muted rounded-xl p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-coins text-2xl text-primary mr-3"></i>
+                                <h4 class="font-semibold">Gold Holdings</h4>
+                            </div>
+                            <div class="text-2xl font-bold mb-2" data-bind="holdings.weight">62.5 oz</div>
+                            <div class="text-sm text-muted-foreground">Current Weight</div>
+                        </div>
+                        
+                        <div class="bg-muted rounded-xl p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-chart-line text-2xl text-primary mr-3"></i>
+                                <h4 class="font-semibold">Performance</h4>
+                            </div>
+                            <div class="text-2xl font-bold mb-2 text-green-600">+12.8%</div>
+                            <div class="text-sm text-muted-foreground">This Year</div>
+                        </div>
+                        
+                        <div class="bg-muted rounded-xl p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-calendar text-2xl text-primary mr-3"></i>
+                                <h4 class="font-semibold">Storage</h4>
+                            </div>
+                            <div class="text-2xl font-bold mb-2" data-bind="storage.daysRemaining">287 days</div>
+                            <div class="text-sm text-muted-foreground">Until Renewal</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="mb-8">
+                        <h4 class="text-xl font-semibold mb-4">Recent Activity</h4>
+                        <div class="space-y-3">
+                            <!-- @MAP: recentActivity.map(activity => ( -->
+                            <div class="flex items-center justify-between p-4 bg-muted rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center mr-3">
+                                        <i class="fas fa-plus text-primary-foreground"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium" data-bind="activity.description">Gold consignment completed</div>
+                                        <div class="text-sm text-muted-foreground" data-bind="activity.date">January 15, 2024</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-semibold" data-bind="activity.amount">+5.2 oz</div>
+                                    <div class="text-sm text-muted-foreground">Value: $10,580</div>
+                                </div>
+                            </div>
+                            <!-- @END_MAP -->
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button data-event="click:addGold" class="flex items-center justify-center p-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Gold
+                        </button>
+                        <button data-event="click:viewCertificates" class="flex items-center justify-center p-4 border border-border rounded-lg hover:bg-muted transition-colors">
+                            <i class="fas fa-certificate mr-2"></i>View Certificates
+                        </button>
+                        <button data-event="click:manageWill" class="flex items-center justify-center p-4 border border-border rounded-lg hover:bg-muted transition-colors">
+                            <i class="fas fa-scroll mr-2"></i>Manage Will
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: Dashboard -->
+
+    <!-- Public Tracking System -->
+    <!-- @COMPONENT: TrackingSystem [public consignment tracking] -->
+    <section id="tracking" class="py-20 bg-background">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-serif font-bold mb-6">Track Your Consignment</h2>
+                <p class="text-xl text-muted-foreground max-w-3xl mx-auto">Enter your consignment ID or scan the QR code to view real-time status and audit trail</p>
+            </div>
+            
+            <div class="max-w-2xl mx-auto mb-12">
+                <div class="bg-card rounded-2xl shadow-lg border border-border p-8">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <input data-bind="trackingId" type="text" placeholder="Enter Consignment ID (e.g., GV-2024-001234)" class="w-full px-4 py-3 border border-border rounded-lg bg-input focus:ring-2 focus:ring-ring focus:border-ring">
+                        </div>
+                        <button data-event="click:trackConsignment" class="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-colors whitespace-nowrap">
+                            <i class="fas fa-search mr-2"></i>Track Now
+                        </button>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button data-event="click:scanQR" class="text-primary hover:text-primary/80 text-sm font-medium">
+                            <i class="fas fa-qrcode mr-1"></i>Or scan QR code from certificate
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sample Tracking Results -->
+            <div class="bg-card rounded-2xl shadow-lg border border-border p-8" data-mock="true">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 class="text-2xl font-bold">Consignment #GV-2024-001234</h3>
+                        <p class="text-muted-foreground">2.5 oz Gold American Eagle Coins</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-check-circle mr-1"></i>Stored Securely
+                        </div>
+                        <div class="text-sm text-muted-foreground mt-1">Last updated: 2 hours ago</div>
+                    </div>
+                </div>
+                
+                <!-- Tracking Timeline -->
+                <div class="space-y-6">
+                    <!-- @MAP: trackingEvents.map(event => ( -->
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                            <i class="fas fa-check text-primary-foreground text-sm"></i>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold" data-bind="event.title">Items secured in Vault A-127</h4>
+                                <span class="text-sm text-muted-foreground" data-bind="event.date">Jan 15, 2024 - 2:30 PM</span>
+                            </div>
+                            <p class="text-muted-foreground text-sm" data-bind="event.description">Gold coins allocated to individual secure storage compartment with biometric access control</p>
+                        </div>
+                    </div>
+                    <!-- @END_MAP -->
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                            <i class="fas fa-shield-alt text-primary-foreground text-sm"></i>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold">Insurance coverage activated</h4>
+                                <span class="text-sm text-muted-foreground">Jan 15, 2024 - 1:45 PM</span>
+                            </div>
+                            <p class="text-muted-foreground text-sm">Full value insurance policy activated through Lloyd's of London - Policy #LL-2024-7891</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                            <i class="fas fa-certificate text-primary-foreground text-sm"></i>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-semibold">Digital certificate generated</h4>
+                                <span class="text-sm text-muted-foreground">Jan 15, 2024 - 1:15 PM</span>
+                            </div>
+                            <p class="text-muted-foreground text-sm">Blockchain-verified certificate with QR tracking code generated and emailed</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Certificate Preview -->
+                <div class="mt-8 p-6 bg-muted rounded-xl">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-semibold">Storage Certificate</h4>
+                            <p class="text-sm text-muted-foreground">PDF certificate with QR tracking code</p>
+                        </div>
+                        <button data-event="click:downloadCertificate" class="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+                            <i class="fas fa-download mr-1"></i>Download PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: TrackingSystem -->
+
+    <!-- Digital Will Interface -->
+    <!-- @COMPONENT: DigitalWill [inheritance planning interface] -->
+    <section class="py-20 bg-muted">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-serif font-bold mb-6">Digital Inheritance Planning</h2>
+                <p class="text-xl text-muted-foreground max-w-3xl mx-auto">Secure your family's future with our comprehensive digital will and inheritance management system</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Will Builder -->
+                <div class="bg-card rounded-2xl shadow-lg border border-border p-8">
+                    <h3 class="text-2xl font-bold mb-6">Digital Will Builder</h3>
+                    
+                    <!-- @STATE: willData:object = {} -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Primary Beneficiary</label>
+                            <input data-bind="willData.primaryBeneficiary" type="text" placeholder="Full legal name" class="w-full px-4 py-3 border border-border rounded-lg bg-input focus:ring-2 focus:ring-ring focus:border-ring">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Relationship</label>
+                            <select data-bind="willData.relationship" class="w-full px-4 py-3 border border-border rounded-lg bg-input focus:ring-2 focus:ring-ring focus:border-ring">
+                                <option>Select relationship</option>
+                                <option>Spouse</option>
+                                <option>Child</option>
+                                <option>Parent</option>
+                                <option>Sibling</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Gold Allocation (%)</label>
+                            <input data-bind="willData.allocation" type="number" placeholder="50" min="1" max="100" class="w-full px-4 py-3 border border-border rounded-lg bg-input focus:ring-2 focus:ring-ring focus:border-ring">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Special Instructions</label>
+                            <textarea data-bind="willData.instructions" rows="4" placeholder="Any specific instructions for this inheritance..." class="w-full px-4 py-3 border border-border rounded-lg bg-input focus:ring-2 focus:ring-ring focus:border-ring resize-none"></textarea>
+                        </div>
+                        
+                        <button data-event="click:addBeneficiary" class="w-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground py-3 rounded-lg font-semibold transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Another Beneficiary
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Current Beneficiaries -->
+                <div class="bg-card rounded-2xl shadow-lg border border-border p-8">
+                    <h3 class="text-2xl font-bold mb-6">Current Beneficiaries</h3>
+                    
+                    <div class="space-y-4" data-mock="true">
+                        <!-- @MAP: beneficiaries.map(beneficiary => ( -->
+                        <div class="p-4 bg-muted rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold" data-bind="beneficiary.name">Sarah Johnson</h4>
+                                <span class="text-sm text-muted-foreground" data-bind="beneficiary.relationship">Daughter</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-primary" data-bind="beneficiary.percentage">60%</span>
+                                <div class="flex space-x-2">
+                                    <button data-event="click:editBeneficiary" class="text-muted-foreground hover:text-foreground">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button data-event="click:deleteBeneficiary" class="text-muted-foreground hover:text-destructive">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-sm text-muted-foreground mt-2" data-bind="beneficiary.instructions">To be held in trust until age 25, with annual distributions for education expenses.</p>
+                        </div>
+                        <!-- @END_MAP -->
+                        
+                        <div class="p-4 bg-muted rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-semibold">Michael Johnson</h4>
+                                <span class="text-sm text-muted-foreground">Son</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-primary">40%</span>
+                                <div class="flex space-x-2">
+                                    <button class="text-muted-foreground hover:text-foreground">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-muted-foreground hover:text-destructive">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-sm text-muted-foreground mt-2">Equal distribution with sister, available at age 21.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Will Summary -->
+                    <div class="mt-8 p-4 bg-primary/10 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium">Total Allocated:</span>
+                            <span class="text-xl font-bold text-primary" data-bind="totalAllocation">100%</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium">Will Status:</span>
+                            <span class="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Complete</span>
+                        </div>
+                    </div>
+                    
+                    <button data-event="click:saveWill" class="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-save mr-2"></i>Save Digital Will
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: DigitalWill -->
+
+    <!-- Admin Dashboard Preview -->
+    <!-- @COMPONENT: AdminDashboard [comprehensive admin interface] -->
+    <section class="py-20 bg-background">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-serif font-bold mb-6">Admin Management Center</h2>
+                <p class="text-xl text-muted-foreground max-w-3xl mx-auto">Comprehensive administration tools for managing consignments, claims, and customer support</p>
+            </div>
+            
+            <!-- Admin Navigation -->
+            <div class="bg-card rounded-2xl shadow-lg border border-border mb-8">
+                <div class="flex flex-wrap border-b border-border">
+                    <button class="px-6 py-4 font-medium text-primary border-b-2 border-primary">Overview</button>
+                    <button class="px-6 py-4 font-medium text-muted-foreground hover:text-foreground">Consignments</button>
+                    <button class="px-6 py-4 font-medium text-muted-foreground hover:text-foreground">Claims</button>
+                    <button class="px-6 py-4 font-medium text-muted-foreground hover:text-foreground">Support</button>
+                    <button class="px-6 py-4 font-medium text-muted-foreground hover:text-foreground">Analytics</button>
+                </div>
+                
+                <!-- Overview Tab Content -->
+                <div class="p-6">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-muted rounded-xl p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Active Consignments</p>
+                                    <p class="text-2xl font-bold" data-bind="admin.activeConsignments">1,247</p>
+                                </div>
+                                <i class="fas fa-box-open text-2xl text-primary"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-muted rounded-xl p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Pending Claims</p>
+                                    <p class="text-2xl font-bold" data-bind="admin.pendingClaims">23</p>
+                                </div>
+                                <i class="fas fa-gavel text-2xl text-primary"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-muted rounded-xl p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Total Gold (oz)</p>
+                                    <p class="text-2xl font-bold" data-bind="admin.totalGold">15,382</p>
+                                </div>
+                                <i class="fas fa-coins text-2xl text-primary"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-muted rounded-xl p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Portfolio Value</p>
+                                    <p class="text-2xl font-bold" data-bind="admin.totalValue">$31.3M</p>
+                                </div>
+                                <i class="fas fa-chart-line text-2xl text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activities -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4">Recent Consignments</h3>
+                            <div class="space-y-3">
+                                <!-- @MAP: recentConsignments.map(consignment => ( -->
+                                <div class="flex items-center justify-between p-4 bg-muted rounded-lg" data-mock="true">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center mr-3">
+                                            <i class="fas fa-plus text-primary-foreground text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium" data-bind="consignment.id">GV-2024-001250</p>
+                                            <p class="text-sm text-muted-foreground" data-bind="consignment.description">5.2 oz Gold Bars</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-semibold" data-bind="consignment.value">$10,580</p>
+                                        <p class="text-sm text-green-600">Verified</p>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP -->
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4">Pending Actions</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg" data-mock="true">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+                                        <div>
+                                            <p class="font-medium">KYC Review Required</p>
+                                            <p class="text-sm text-muted-foreground">Customer ID: CU-2024-4821</p>
+                                        </div>
+                                    </div>
+                                    <button data-event="click:reviewKYC" class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm">Review</button>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg" data-mock="true">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-scroll text-blue-600 mr-3"></i>
+                                        <div>
+                                            <p class="font-medium">Inheritance Claim</p>
+                                            <p class="text-sm text-muted-foreground">Claim ID: CL-2024-0089</p>
+                                        </div>
+                                    </div>
+                                    <button data-event="click:reviewClaim" class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm">Review</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: AdminDashboard -->
+
+    <!-- Live Chat Support -->
+    <!-- @COMPONENT: ChatSupport [customer support chat interface] -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <!-- @STATE: chatOpen:boolean = false -->
+        <div class="relative">
+            <!-- Chat Toggle Button -->
+            <button data-event="click:toggleChat" class="w-14 h-14 bg-primary hover:bg-primary/90 rounded-full flex items-center justify-center shadow-lg transition-all">
+                <i class="fas fa-comment text-primary-foreground text-xl"></i>
+            </button>
+            
+            <!-- Chat Widget (Hidden by default) -->
+            <div class="absolute bottom-16 right-0 w-80 bg-card rounded-2xl shadow-2xl border border-border overflow-hidden transform opacity-0 scale-95 transition-all duration-200" data-bind="chatOpen" style="display: none;">
+                <!-- Chat Header -->
+                <div class="bg-primary text-primary-foreground p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-user text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold">Gold Investment Support</p>
+                                <p class="text-xs text-primary-foreground/80">Typically replies in minutes</p>
+                            </div>
+                        </div>
+                        <button data-event="click:closeChat" class="text-primary-foreground/80 hover:text-primary-foreground">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages -->
+                <div class="h-64 p-4 overflow-y-auto bg-background">
+                    <div class="space-y-3" data-mock="true">
+                        <!-- @MAP: chatMessages.map(message => ( -->
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                                <i class="fas fa-user text-primary-foreground text-xs"></i>
+                            </div>
+                            <div class="bg-muted rounded-lg p-3 max-w-xs">
+                                <p class="text-sm" data-bind="message.text">Hello! How can I help you with your gold investment today?</p>
+                                <p class="text-xs text-muted-foreground mt-1" data-bind="message.time">2:30 PM</p>
+                            </div>
+                        </div>
+                        <!-- @END_MAP -->
+                    </div>
+                </div>
+                
+                <!-- Chat Input -->
+                <div class="p-4 border-t border-border">
+                    <div class="flex items-center space-x-2">
+                        <input data-bind="chatMessage" type="text" placeholder="Type your message..." class="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-input focus:ring-2 focus:ring-ring focus:border-ring">
+                        <button data-event="click:sendMessage" class="bg-primary text-primary-foreground p-2 rounded-lg hover:bg-primary/90">
+                            <i class="fas fa-paper-plane text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: ChatSupport -->
+
+    <!-- Footer -->
+    <!-- @COMPONENT: Footer [comprehensive site footer] -->
+    <footer class="bg-card border-t border-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Company Info -->
+                <div class="col-span-1 md:col-span-2">
+                    <h3 class="text-2xl font-serif font-bold text-primary mb-4">
+                        <i class="fas fa-shield-alt mr-2"></i>GoldVault Pro
+                    </h3>
+                    <p class="text-muted-foreground mb-6 max-w-md">
+                        The world's most trusted platform for secure gold storage, investment, and inheritance planning. 
+                        Protecting wealth for future generations since 2020.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-muted-foreground hover:text-primary transition-colors">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-muted-foreground hover:text-primary transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-muted-foreground hover:text-primary transition-colors">
+                            <i class="fab fa-facebook text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Services -->
+                <div>
+                    <h4 class="font-semibold mb-4">Services</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Gold Storage</a></li>
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Consignment</a></li>
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Digital Inheritance</a></li>
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Investment Advisory</a></li>
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Insurance Services</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Support -->
+                <div>
+                    <h4 class="font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Help Center</a></li>
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Track Consignment</a></li>
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Pricing Calculator</a></li>
+                        <li><a href="#" class="text-muted-foreground hover:text-foreground text-sm transition-colors">Live Chat</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Footer Bottom -->
+            <div class="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <div class="text-sm text-muted-foreground mb-4 md:mb-0">
+                    © 2024 GoldVault Pro. All rights reserved. | 
+                    <a href="#" class="hover:text-foreground">Privacy Policy</a> | 
+                    <a href="#" class="hover:text-foreground">Terms of Service</a> | 
+                    <a href="#" class="hover:text-foreground">GDPR Compliance</a>
+                </div>
+                <div class="flex items-center space-x-4 text-sm text-muted-foreground">
+                    <span class="flex items-center">
+                        <i class="fas fa-shield-check text-green-600 mr-1"></i>
+                        SSL Secured
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fas fa-lock text-green-600 mr-1"></i>
+                        Bank-Grade Security
+                    </span>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- @END_COMPONENT: Footer -->
+
+    <script>
+        (function() {
+            // TODO: Implement business logic, API calls, or state management
+            
+            // Chat functionality mock
+            let chatOpen = false;
+            
+            document.querySelector('[data-event="click:toggleChat"]').addEventListener('click', function() {
+                chatOpen = !chatOpen;
+                const chatWidget = document.querySelector('.absolute.bottom-16');
+                if (chatOpen) {
+                    chatWidget.style.display = 'block';
+                    setTimeout(() => {
+                        chatWidget.classList.remove('opacity-0', 'scale-95');
+                    }, 10);
+                } else {
+                    chatWidget.classList.add('opacity-0', 'scale-95');
+                    setTimeout(() => {
+                        chatWidget.style.display = 'none';
+                    }, 200);
+                }
+            });
+            
+            // Carousel functionality mock
+            let currentSlide = 0;
+            const slides = document.querySelectorAll('.carousel-slide');
+            const indicators = document.querySelectorAll('.absolute.bottom-8 button');
+            
+            function nextSlide() {
+                slides[currentSlide].style.opacity = '0';
+                indicators[currentSlide].classList.remove('bg-primary');
+                indicators[currentSlide].classList.add('bg-white/50');
+                
+                currentSlide = (currentSlide + 1) % slides.length;
+                
+                slides[currentSlide].style.opacity = '1';
+                indicators[currentSlide].classList.remove('bg-white/50');
+                indicators[currentSlide].classList.add('bg-primary');
+            }
+            
+            // Auto-advance carousel every 5 seconds
+            setInterval(nextSlide, 5000);
+            
+            // Pricing calculator mock functionality
+            const goldValueInput = document.querySelector('[data-bind="goldValue"]');
+            const durationSelect = document.querySelector('[data-bind="duration"]');
+            const insuranceCheckbox = document.querySelector('[data-bind="insurance"]');
+            
+            function updatePricing() {
+                const goldValue = parseFloat(goldValueInput.value) || 50000;
+                const duration = parseInt(durationSelect.value) || 12;
+                const hasInsurance = insuranceCheckbox.checked;
+                
+                const storageRate = 0.005; // 0.5% annually
+                const insuranceRate = 0.001; // 0.1% annually
+                const setupFee = 25;
+                
+                const storageFee = (goldValue * storageRate * duration / 12);
+                const insuranceFee = hasInsurance ? (goldValue * insuranceRate * duration / 12) : 0;
+                const totalCost = storageFee + insuranceFee + setupFee;
+                
+                document.querySelector('[data-bind="storageFee"]').textContent = `$${storageFee.toFixed(2)}`;
+                document.querySelector('[data-bind="insuranceFee"]').textContent = `$${insuranceFee.toFixed(2)}`;
+                document.querySelector('[data-bind="totalCost"]').textContent = `$${totalCost.toFixed(2)}`;
+            }
+            
+            // Add event listeners for pricing calculator
+            if (goldValueInput) {
+                goldValueInput.addEventListener('input', updatePricing);
+                durationSelect.addEventListener('change', updatePricing);
+                insuranceCheckbox.addEventListener('change', updatePricing);
+            }
+            
+            // Initialize pricing calculation
+            updatePricing();
+            
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
