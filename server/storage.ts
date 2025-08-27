@@ -5,7 +5,9 @@ import {
   digitalWills,
   beneficiaries,
   inheritanceClaims,
+  supportTickets,
   chatMessages,
+  adminNotifications,
   accountTransactions,
   goldHoldings,
   storagePlans,
@@ -20,8 +22,12 @@ import {
   type InsertBeneficiary,
   type InheritanceClaim,
   type InsertClaim,
+  type SupportTicket,
+  type InsertSupportTicket,
   type ChatMessage,
   type InsertChatMessage,
+  type AdminNotification,
+  type InsertAdminNotification,
   type AccountTransaction,
   type InsertAccountTransaction,
   type GoldHolding,
@@ -74,9 +80,32 @@ export interface IStorage {
   addClaimCommunication(claimId: string, message: string, fromAdmin: boolean, adminId?: string): Promise<void>;
   updateClaimPriority(claimId: string, priority: string): Promise<void>;
   
+  // Support ticket operations
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  getSupportTicket(id: string): Promise<SupportTicket | undefined>;
+  getAllSupportTickets(): Promise<SupportTicket[]>;
+  getTicketsByStatus(status: string): Promise<SupportTicket[]>;
+  getTicketsByAdmin(adminId: string): Promise<SupportTicket[]>;
+  updateTicketStatus(id: string, status: string, adminId?: string): Promise<void>;
+  updateTicketPriority(id: string, priority: string): Promise<void>;
+  assignTicketToAdmin(ticketId: string, adminId: string): Promise<void>;
+  escalateTicket(ticketId: string, escalatedBy: string, reason: string): Promise<void>;
+  resolveTicket(ticketId: string, resolvedBy: string, resolutionNotes: string): Promise<void>;
+  updateTicketActivity(ticketId: string): Promise<void>;
+
   // Chat operations
   saveChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(sessionId: string): Promise<ChatMessage[]>;
+  getChatMessagesByTicket(ticketId: string): Promise<ChatMessage[]>;
+  markMessagesAsRead(sessionId: string, userId: string): Promise<void>;
+  
+  // Admin notification operations
+  createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification>;
+  getAdminNotifications(adminId: string): Promise<AdminNotification[]>;
+  getUnreadNotifications(adminId: string): Promise<AdminNotification[]>;
+  markNotificationAsRead(notificationId: string): Promise<void>;
+  markAllNotificationsAsRead(adminId: string): Promise<void>;
+  deleteNotification(notificationId: string): Promise<void>;
   
   // Account transaction operations
   createAccountTransaction(transaction: InsertAccountTransaction): Promise<AccountTransaction>;
@@ -415,12 +444,152 @@ export class DatabaseStorage implements IStorage {
       .where(eq(inheritanceClaims.id, claimId));
   }
 
+  // Support ticket operations
+  async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
+    const [created] = await db
+      .insert(supportTickets)
+      .values(ticket)
+      .returning();
+    return created;
+  }
+
+  async getSupportTicket(id: string): Promise<SupportTicket | undefined> {
+    const [ticket] = await db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.id, id));
+    return ticket;
+  }
+
+  async getAllSupportTickets(): Promise<SupportTicket[]> {
+    return db
+      .select()
+      .from(supportTickets)
+      .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getTicketsByStatus(status: string): Promise<SupportTicket[]> {
+    return db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.status, status))
+      .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getTicketsByAdmin(adminId: string): Promise<SupportTicket[]> {
+    return db
+      .select()
+      .from(supportTickets)
+      .where(eq(supportTickets.assignedTo, adminId))
+      .orderBy(desc(supportTickets.lastActivity));
+  }
+
+  async updateTicketStatus(id: string, status: string, adminId?: string): Promise<void> {
+    const updateData: any = { 
+      status, 
+      updatedAt: new Date(),
+      lastActivity: new Date()
+    };
+    
+    if (status === 'resolved' && adminId) {
+      updateData.resolvedAt = new Date();
+      updateData.resolvedBy = adminId;
+    }
+    
+    await db
+      .update(supportTickets)
+      .set(updateData)
+      .where(eq(supportTickets.id, id));
+  }
+
+  async updateTicketPriority(id: string, priority: string): Promise<void> {
+    await db
+      .update(supportTickets)
+      .set({ 
+        priority, 
+        updatedAt: new Date(),
+        lastActivity: new Date()
+      })
+      .where(eq(supportTickets.id, id));
+  }
+
+  async assignTicketToAdmin(ticketId: string, adminId: string): Promise<void> {
+    await db
+      .update(supportTickets)
+      .set({ 
+        assignedTo: adminId, 
+        updatedAt: new Date(),
+        lastActivity: new Date()
+      })
+      .where(eq(supportTickets.id, ticketId));
+  }
+
+  async escalateTicket(ticketId: string, escalatedBy: string, reason: string): Promise<void> {
+    await db
+      .update(supportTickets)
+      .set({ 
+        status: 'escalated',
+        escalatedBy,
+        escalatedAt: new Date(),
+        escalationReason: reason,
+        priority: 'high',
+        updatedAt: new Date(),
+        lastActivity: new Date()
+      })
+      .where(eq(supportTickets.id, ticketId));
+  }
+
+  async resolveTicket(ticketId: string, resolvedBy: string, resolutionNotes: string): Promise<void> {
+    await db
+      .update(supportTickets)
+      .set({ 
+        status: 'resolved',
+        resolvedBy,
+        resolvedAt: new Date(),
+        resolutionNotes,
+        updatedAt: new Date(),
+        lastActivity: new Date()
+      })
+      .where(eq(supportTickets.id, ticketId));
+  }
+
+  async updateTicketActivity(ticketId: string): Promise<void> {
+    await db
+      .update(supportTickets)
+      .set({ 
+        lastActivity: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(supportTickets.id, ticketId));
+  }
+
   // Chat operations
   async saveChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
     const [saved] = await db
       .insert(chatMessages)
       .values(message)
       .returning();
+    
+    // Update ticket activity if this message is linked to a ticket
+    if (message.ticketId) {
+      await this.updateTicketActivity(message.ticketId);
+      
+      // Set first response time if this is an admin response and it's not set yet
+      if (!message.isCustomer) {
+        const [ticket] = await db
+          .select({ firstResponseTime: supportTickets.firstResponseTime })
+          .from(supportTickets)
+          .where(eq(supportTickets.id, message.ticketId));
+        
+        if (ticket && !ticket.firstResponseTime) {
+          await db
+            .update(supportTickets)
+            .set({ firstResponseTime: new Date() })
+            .where(eq(supportTickets.id, message.ticketId));
+        }
+      }
+    }
+    
     return saved;
   }
 
@@ -430,6 +599,76 @@ export class DatabaseStorage implements IStorage {
       .from(chatMessages)
       .where(eq(chatMessages.sessionId, sessionId))
       .orderBy(desc(chatMessages.timestamp));
+  }
+
+  async getChatMessagesByTicket(ticketId: string): Promise<ChatMessage[]> {
+    return db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.ticketId, ticketId))
+      .orderBy(chatMessages.timestamp);
+  }
+
+  async markMessagesAsRead(sessionId: string, userId: string): Promise<void> {
+    await db
+      .update(chatMessages)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(chatMessages.sessionId, sessionId),
+          eq(chatMessages.userId, userId)
+        )
+      );
+  }
+
+  // Admin notification operations
+  async createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification> {
+    const [created] = await db
+      .insert(adminNotifications)
+      .values(notification)
+      .returning();
+    return created;
+  }
+
+  async getAdminNotifications(adminId: string): Promise<AdminNotification[]> {
+    return db
+      .select()
+      .from(adminNotifications)
+      .where(eq(adminNotifications.adminId, adminId))
+      .orderBy(desc(adminNotifications.createdAt));
+  }
+
+  async getUnreadNotifications(adminId: string): Promise<AdminNotification[]> {
+    return db
+      .select()
+      .from(adminNotifications)
+      .where(
+        and(
+          eq(adminNotifications.adminId, adminId),
+          eq(adminNotifications.isRead, false)
+        )
+      )
+      .orderBy(desc(adminNotifications.createdAt));
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    await db
+      .update(adminNotifications)
+      .set({ isRead: true })
+      .where(eq(adminNotifications.id, notificationId));
+  }
+
+  async markAllNotificationsAsRead(adminId: string): Promise<void> {
+    await db
+      .update(adminNotifications)
+      .set({ isRead: true })
+      .where(eq(adminNotifications.adminId, adminId));
+  }
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    await db
+      .delete(adminNotifications)
+      .where(eq(adminNotifications.id, notificationId));
   }
 
   // Storage plans

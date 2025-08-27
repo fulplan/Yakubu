@@ -114,15 +114,60 @@ export const inheritanceClaims = pgTable("inheritance_claims", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Chat messages table
+// Support tickets table
+export const supportTickets = pgTable("support_tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => users.id),
+  customerEmail: varchar("customer_email").notNull(),
+  customerName: varchar("customer_name").notNull(),
+  subject: varchar("subject").notNull(),
+  description: text("description").notNull(),
+  category: varchar("category").notNull().default("general"), // general, technical, account, billing, consignment
+  priority: varchar("priority").notNull().default("medium"), // low, medium, high, urgent
+  status: varchar("status").notNull().default("open"), // open, pending, escalated, resolved, closed
+  assignedTo: varchar("assigned_to").references(() => users.id), // admin assigned
+  escalatedBy: varchar("escalated_by").references(() => users.id), // admin who escalated
+  escalatedAt: timestamp("escalated_at"),
+  escalationReason: text("escalation_reason"),
+  resolutionNotes: text("resolution_notes"),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by").references(() => users.id),
+  firstResponseTime: timestamp("first_response_time"),
+  lastActivity: timestamp("last_activity").defaultNow(),
+  chatSessionId: varchar("chat_session_id"), // link to chat session
+  attachmentUrls: text("attachment_urls").array(),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Chat messages table (enhanced for support context)
 export const chatMessages = pgTable("chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   sessionId: varchar("session_id").notNull(),
+  ticketId: varchar("ticket_id").references(() => supportTickets.id), // link to support ticket
   userId: varchar("user_id").references(() => users.id),
   isCustomer: boolean("is_customer").default(true),
   message: text("message").notNull(),
+  messageType: varchar("message_type").notNull().default("text"), // text, system, escalation, resolution
   attachmentUrls: text("attachment_urls").array(),
+  isRead: boolean("is_read").default(false),
   timestamp: timestamp("timestamp").defaultNow(),
+});
+
+// Admin notifications table
+export const adminNotifications = pgTable("admin_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  adminId: varchar("admin_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // new_ticket, escalation, urgent, customer_response
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  ticketId: varchar("ticket_id").references(() => supportTickets.id),
+  isRead: boolean("is_read").default(false),
+  priority: varchar("priority").notNull().default("normal"), // low, normal, high, urgent
+  actionRequired: boolean("action_required").default(false),
+  metadata: jsonb("metadata"), // additional data specific to notification type
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Account transactions table for credit/debit functionality
@@ -210,6 +255,41 @@ export const inheritanceClaimsRelations = relations(inheritanceClaims, ({ one })
   }),
 }));
 
+export const supportTicketsRelations = relations(supportTickets, ({ one, many }) => ({
+  customer: one(users, {
+    fields: [supportTickets.customerId],
+    references: [users.id],
+  }),
+  assignedAdmin: one(users, {
+    fields: [supportTickets.assignedTo],
+    references: [users.id],
+  }),
+  chatMessages: many(chatMessages),
+  notifications: many(adminNotifications),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  user: one(users, {
+    fields: [chatMessages.userId],
+    references: [users.id],
+  }),
+  ticket: one(supportTickets, {
+    fields: [chatMessages.ticketId],
+    references: [supportTickets.id],
+  }),
+}));
+
+export const adminNotificationsRelations = relations(adminNotifications, ({ one }) => ({
+  admin: one(users, {
+    fields: [adminNotifications.adminId],
+    references: [users.id],
+  }),
+  ticket: one(supportTickets, {
+    fields: [adminNotifications.ticketId],
+    references: [supportTickets.id],
+  }),
+}));
+
 // Zod schemas
 export const insertConsignmentSchema = createInsertSchema(consignments).omit({
   id: true,
@@ -236,9 +316,24 @@ export const insertClaimSchema = createInsertSchema(inheritanceClaims).omit({
   resolutionDate: true,
 });
 
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  resolvedAt: true,
+  escalatedAt: true,
+  firstResponseTime: true,
+  lastActivity: true,
+});
+
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   id: true,
   timestamp: true,
+});
+
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -271,8 +366,14 @@ export type Beneficiary = typeof beneficiaries.$inferSelect;
 export type InsertClaim = z.infer<typeof insertClaimSchema>;
 export type InheritanceClaim = typeof inheritanceClaims.$inferSelect;
 
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+export type SupportTicket = typeof supportTickets.$inferSelect;
+
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
+export type AdminNotification = typeof adminNotifications.$inferSelect;
 
 export type InsertAccountTransaction = z.infer<typeof insertAccountTransactionSchema>;
 export type AccountTransaction = typeof accountTransactions.$inferSelect;

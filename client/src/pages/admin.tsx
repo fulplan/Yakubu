@@ -763,6 +763,9 @@ export default function Admin() {
   const [notificationDialog, setNotificationDialog] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationUsers, setNotificationUsers] = useState<string[]>([]);
+  const [ticketChatMessages, setTicketChatMessages] = useState<any[]>([]);
+  const [resolveDialog, setResolveDialog] = useState(false);
+  const [resolutionNotes, setResolutionNotes] = useState("");
 
   // Auth protection
   useEffect(() => {
@@ -798,6 +801,18 @@ export default function Admin() {
   const { data: goldPrices } = useQuery({
     queryKey: ["/api/gold-prices"],
   }) as { data: { usd: number } | undefined };
+
+  // Support ticket queries  
+  const { data: supportTickets = [], isLoading: ticketsLoading } = useQuery({
+    queryKey: ["/api/admin/support-tickets"],
+    enabled: !!user,
+  }) as { data: any[], isLoading: boolean };
+
+  const { data: adminNotifications = [], isLoading: notificationsLoading } = useQuery({
+    queryKey: ["/api/admin/notifications"],
+    enabled: !!user,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  }) as { data: any[], isLoading: boolean };
 
   // Enhanced claims mutations
   const assignClaimMutation = useMutation({
@@ -969,6 +984,113 @@ export default function Admin() {
       status,
       adminNotes: claimNotes,
     });
+  };
+
+  // Support ticket mutations
+  const updateTicketStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/support-tickets/${id}/status`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Ticket Status Updated",
+        description: "Support ticket status has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/support-tickets"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Update Ticket",
+        description: error.message || "An error occurred while updating the ticket status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const escalateTicketMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const response = await apiRequest("POST", `/api/admin/support-tickets/${id}/escalate`, { reason });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Ticket Escalated",
+        description: "Support ticket has been escalated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/support-tickets"] });
+      setEscalationDialog(false);
+      setEscalationReason("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Escalate Ticket",
+        description: error.message || "An error occurred while escalating the ticket.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resolveTicketMutation = useMutation({
+    mutationFn: async ({ id, resolutionNotes }: { id: string; resolutionNotes: string }) => {
+      const response = await apiRequest("POST", `/api/admin/support-tickets/${id}/resolve`, { resolutionNotes });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Ticket Resolved",
+        description: "Support ticket has been resolved successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/support-tickets"] });
+      setResolveDialog(false);
+      setResolutionNotes("");
+      setSelectedTicket(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Resolve Ticket",
+        description: error.message || "An error occurred while resolving the ticket.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendChatMessageMutation = useMutation({
+    mutationFn: async ({ sessionId, message, ticketId }: { sessionId: string; message: string; ticketId?: string }) => {
+      const response = await apiRequest("POST", `/api/chat/${sessionId}`, {
+        message,
+        ticketId,
+        userId: user?.id,
+        isCustomer: false,
+        messageType: 'text'
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setChatMessage("");
+      // Refresh chat messages for the ticket
+      if (selectedTicket?.chatSessionId) {
+        loadTicketChatMessages(selectedTicket.chatSessionId);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Send Message",
+        description: error.message || "An error occurred while sending the message.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Helper function to load chat messages for a ticket
+  const loadTicketChatMessages = async (sessionId: string) => {
+    try {
+      const response = await apiRequest("GET", `/api/chat/${sessionId}`, {});
+      const messages = await response.json();
+      setTicketChatMessages(messages);
+    } catch (error) {
+      console.error("Failed to load chat messages:", error);
+    }
   };
 
   if (isLoading) {
@@ -1758,13 +1880,20 @@ export default function Admin() {
                   </div>
                 </CardHeader>
                 <CardContent className="max-h-[500px] overflow-y-auto">
-                  {/* Mock tickets - in real app this would come from API */}
-                  {[
-                    { id: 1, customer: "John Smith", email: "john@example.com", subject: "Consignment Status Inquiry", priority: "high", status: "open", lastMessage: "Need update on my gold delivery", time: "2 min ago", unread: 3 },
-                    { id: 2, customer: "Sarah Wilson", email: "sarah@example.com", subject: "Account Balance Question", priority: "normal", status: "pending", lastMessage: "My account shows incorrect balance", time: "15 min ago", unread: 1 },
-                    { id: 3, customer: "Mike Johnson", email: "mike@example.com", subject: "Storage Plan Change", priority: "low", status: "escalated", lastMessage: "Want to upgrade storage plan", time: "1 hour ago", unread: 0 },
-                    { id: 4, customer: "Emily Davis", email: "emily@example.com", subject: "Inheritance Claim Help", priority: "urgent", status: "open", lastMessage: "Need help with documentation", time: "3 hours ago", unread: 2 }
-                  ].filter(ticket => ticketFilter === 'all' || ticket.status === ticketFilter).map((ticket) => (
+                  {ticketsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Loading support tickets...</p>
+                    </div>
+                  ) : supportTickets.filter(ticket => ticketFilter === 'all' || ticket.status === ticketFilter).length === 0 ? (
+                    <div className="text-center py-12">
+                      <Headphones className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h4 className="text-lg font-semibold mb-2">No Support Tickets</h4>
+                      <p className="text-muted-foreground">
+                        {ticketFilter === 'all' ? 'No support tickets found.' : `No ${ticketFilter} tickets found.`}
+                      </p>
+                    </div>
+                  ) : supportTickets.filter(ticket => ticketFilter === 'all' || ticket.status === ticketFilter).map((ticket) => (
                     <Card 
                       key={ticket.id}
                       className={`p-4 mb-3 cursor-pointer transition-colors ${
@@ -1776,10 +1905,10 @@ export default function Admin() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{ticket.customer}</h4>
+                            <h4 className="font-medium">{ticket.customerName}</h4>
                             <Badge 
                               variant={ticket.priority === 'urgent' || ticket.priority === 'high' ? 'destructive' : 
-                                       ticket.priority === 'normal' ? 'default' : 'secondary'}
+                                       ticket.priority === 'medium' ? 'default' : 'secondary'}
                               className="text-xs"
                             >
                               {ticket.priority}
@@ -1791,16 +1920,18 @@ export default function Admin() {
                             >
                               {ticket.status}
                             </Badge>
-                            {ticket.unread > 0 && (
-                              <Badge variant="destructive" className="text-xs">
-                                {ticket.unread} new
+                            {ticket.assignedTo && (
+                              <Badge variant="secondary" className="text-xs">
+                                Assigned
                               </Badge>
                             )}
                           </div>
                           <p className="text-sm font-medium text-muted-foreground mb-1">{ticket.subject}</p>
-                          <p className="text-sm text-muted-foreground mb-2">{ticket.email}</p>
-                          <p className="text-sm">{ticket.lastMessage}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{ticket.time}</p>
+                          <p className="text-sm text-muted-foreground mb-2">{ticket.customerEmail}</p>
+                          <p className="text-sm line-clamp-2">{ticket.description}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(ticket.createdAt).toLocaleDateString()} {new Date(ticket.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </p>
                         </div>
                         <div className="flex flex-col gap-1">
                           <Button
@@ -1810,6 +1941,9 @@ export default function Admin() {
                               e.stopPropagation();
                               setActiveChatUser(ticket);
                               setChatDialog(true);
+                              if (ticket.chatSessionId) {
+                                loadTicketChatMessages(ticket.chatSessionId);
+                              }
                             }}
                             data-testid={`button-chat-${ticket.id}`}
                           >
@@ -1851,9 +1985,10 @@ export default function Admin() {
                       <div className="bg-muted/50 p-4 rounded-lg">
                         <h4 className="font-medium mb-2">Ticket Details</h4>
                         <div className="space-y-1 text-sm">
-                          <p><span className="text-muted-foreground">Customer:</span> {selectedTicket.customer}</p>
-                          <p><span className="text-muted-foreground">Email:</span> {selectedTicket.email}</p>
+                          <p><span className="text-muted-foreground">Customer:</span> {selectedTicket.customerName}</p>
+                          <p><span className="text-muted-foreground">Email:</span> {selectedTicket.customerEmail}</p>
                           <p><span className="text-muted-foreground">Subject:</span> {selectedTicket.subject}</p>
+                          <p><span className="text-muted-foreground">Category:</span> {selectedTicket.category || 'General'}</p>
                           <p><span className="text-muted-foreground">Status:</span> 
                             <Badge variant="outline" className="ml-2 text-xs">{selectedTicket.status}</Badge>
                           </p>
@@ -1862,19 +1997,39 @@ export default function Admin() {
                               {selectedTicket.priority}
                             </Badge>
                           </p>
+                          {selectedTicket.assignedTo && (
+                            <p><span className="text-muted-foreground">Assigned To:</span> Admin</p>
+                          )}
+                          <p><span className="text-muted-foreground">Created:</span> {new Date(selectedTicket.createdAt).toLocaleString()}</p>
                         </div>
                       </div>
 
                       {/* Conversation History */}
                       <div>
-                        <h4 className="font-medium mb-2">Conversation</h4>
+                        <h4 className="font-medium mb-2">Description & History</h4>
                         <div className="space-y-2 max-h-32 overflow-y-auto bg-muted/30 p-3 rounded">
                           <div className="text-sm">
                             <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded mb-2">
-                              <span className="font-medium text-blue-800 dark:text-blue-200">Customer:</span>
-                              <p className="text-blue-700 dark:text-blue-300">{selectedTicket.lastMessage}</p>
-                              <span className="text-xs text-blue-600 dark:text-blue-400">{selectedTicket.time}</span>
+                              <span className="font-medium text-blue-800 dark:text-blue-200">Original Request:</span>
+                              <p className="text-blue-700 dark:text-blue-300">{selectedTicket.description}</p>
+                              <span className="text-xs text-blue-600 dark:text-blue-400">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
                             </div>
+                            {selectedTicket.responses && selectedTicket.responses.length > 0 && 
+                              selectedTicket.responses.map((response: any, index: number) => (
+                                <div key={index} className="bg-green-100 dark:bg-green-900/30 p-2 rounded mb-2">
+                                  <span className="font-medium text-green-800 dark:text-green-200">Admin Response:</span>
+                                  <p className="text-green-700 dark:text-green-300">{response.message}</p>
+                                  <span className="text-xs text-green-600 dark:text-green-400">{new Date(response.createdAt).toLocaleString()}</span>
+                                </div>
+                              ))
+                            }
+                            {selectedTicket.escalationReason && (
+                              <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded mb-2">
+                                <span className="font-medium text-orange-800 dark:text-orange-200">Escalation Reason:</span>
+                                <p className="text-orange-700 dark:text-orange-300">{selectedTicket.escalationReason}</p>
+                                <span className="text-xs text-orange-600 dark:text-orange-400">{new Date(selectedTicket.escalatedAt).toLocaleString()}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1923,13 +2078,27 @@ export default function Admin() {
                       {/* Action Buttons */}
                       <div className="flex gap-2">
                         <Button
-                          onClick={() => {
+                          onClick={async () => {
                             if (supportResponse.trim()) {
-                              toast({
-                                title: "Response Sent",
-                                description: `Response sent to ${selectedTicket.customer}`,
-                              });
-                              setSupportResponse("");
+                              try {
+                                const response = await apiRequest("POST", `/api/admin/support-tickets/${selectedTicket.id}/respond`, {
+                                  message: supportResponse
+                                });
+                                if (response.ok) {
+                                  toast({
+                                    title: "Response Sent",
+                                    description: `Response sent to ${selectedTicket.customerName}`,
+                                  });
+                                  setSupportResponse("");
+                                  queryClient.invalidateQueries({ queryKey: ["/api/admin/support-tickets"] });
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: "Failed to Send Response",
+                                  description: "An error occurred while sending the response.",
+                                  variant: "destructive",
+                                });
+                              }
                             }
                           }}
                           disabled={!supportResponse.trim()}
@@ -1956,10 +2125,7 @@ export default function Admin() {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            toast({
-                              title: "Ticket Resolved",
-                              description: `Ticket #${selectedTicket.id} marked as resolved.`,
-                            });
+                            setResolveDialog(true);
                           }}
                           size="sm"
                           data-testid="button-resolve-ticket"
@@ -2637,7 +2803,7 @@ export default function Admin() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5 text-green-600" />
-                Live Chat - {activeChatUser?.customer}
+                Live Chat - {activeChatUser?.customerName}
                 <Badge variant="default" className="bg-green-100 text-green-800 text-xs">Online</Badge>
               </DialogTitle>
             </DialogHeader>
@@ -2711,12 +2877,12 @@ export default function Admin() {
                 />
                 <Button
                   onClick={() => {
-                    if (chatMessage.trim()) {
-                      toast({
-                        title: "Message Sent",
-                        description: "Your message has been sent to the customer.",
+                    if (chatMessage.trim() && activeChatUser?.chatSessionId) {
+                      sendChatMessageMutation.mutate({
+                        sessionId: activeChatUser.chatSessionId,
+                        message: chatMessage,
+                        ticketId: activeChatUser.id
                       });
-                      setChatMessage("");
                     }
                   }}
                   disabled={!chatMessage.trim()}
@@ -2854,6 +3020,54 @@ export default function Admin() {
                 >
                   <BellRing className="h-4 w-4 mr-2" />
                   Send Notifications
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Resolve Ticket Dialog */}
+        <Dialog open={resolveDialog} onOpenChange={setResolveDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Resolve Ticket</DialogTitle>
+              <DialogDescription>
+                Mark this ticket as resolved and add resolution notes.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="resolutionNotes">Resolution Notes</Label>
+                <Textarea
+                  id="resolutionNotes"
+                  value={resolutionNotes}
+                  onChange={(e) => setResolutionNotes(e.target.value)}
+                  placeholder="Describe how the issue was resolved..."
+                  rows={4}
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setResolveDialog(false);
+                    setResolutionNotes("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedTicket) {
+                      resolveTicketMutation.mutate({
+                        id: selectedTicket.id,
+                        resolutionNotes: resolutionNotes || "Ticket resolved by admin."
+                      });
+                    }
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Resolve Ticket
                 </Button>
               </div>
             </div>

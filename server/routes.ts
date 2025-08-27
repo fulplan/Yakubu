@@ -8,6 +8,7 @@ import { generateCertificatePDF } from "./services/pdfGenerator";
 import { generateQRCode } from "./services/qrCode";
 import { uploadMiddleware } from "./services/fileUpload";
 import multer from "multer";
+import crypto from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -630,6 +631,228 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat APIs
+  // Support ticket routes
+  app.get('/api/admin/support-tickets', isAdmin, async (req, res) => {
+    try {
+      const tickets = await storage.getAllSupportTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching support tickets:", error);
+      res.status(500).json({ message: "Failed to fetch support tickets" });
+    }
+  });
+
+  app.get('/api/admin/support-tickets/status/:status', isAdmin, async (req, res) => {
+    try {
+      const tickets = await storage.getTicketsByStatus(req.params.status);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching tickets by status:", error);
+      res.status(500).json({ message: "Failed to fetch tickets by status" });
+    }
+  });
+
+  app.get('/api/admin/support-tickets/assigned/:adminId', isAdmin, async (req, res) => {
+    try {
+      const tickets = await storage.getTicketsByAdmin(req.params.adminId);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching assigned tickets:", error);
+      res.status(500).json({ message: "Failed to fetch assigned tickets" });
+    }
+  });
+
+  app.post('/api/support-tickets', async (req, res) => {
+    try {
+      const { customerEmail, customerName, subject, description, category, priority = 'medium' } = req.body;
+      
+      if (!customerEmail || !customerName || !subject || !description) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const ticket = await storage.createSupportTicket({
+        customerEmail,
+        customerName,
+        subject,
+        description,
+        category: category || 'general',
+        priority,
+        chatSessionId: crypto.randomUUID(),
+      });
+
+      // Create notification for all admins
+      const admins = await storage.getAllUsers();
+      const adminUsers = admins.filter(user => user.role === 'admin');
+      
+      for (const admin of adminUsers) {
+        await storage.createAdminNotification({
+          adminId: admin.id,
+          type: 'new_ticket',
+          title: 'New Support Ticket',
+          message: `New ${priority} priority ticket: ${subject}`,
+          ticketId: ticket.id,
+          priority: priority === 'urgent' ? 'urgent' : 'normal',
+          actionRequired: true,
+        });
+      }
+
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Error creating support ticket:", error);
+      res.status(500).json({ message: "Failed to create support ticket" });
+    }
+  });
+
+  app.patch('/api/admin/support-tickets/:id/status', isAdmin, async (req: any, res) => {
+    try {
+      const { status } = req.body;
+      await storage.updateTicketStatus(req.params.id, status, req.user.id);
+      
+      // Create notification if ticket is resolved
+      if (status === 'resolved') {
+        const ticket = await storage.getSupportTicket(req.params.id);
+        if (ticket && ticket.customerId) {
+          await storage.createAdminNotification({
+            adminId: req.user.id,
+            type: 'resolution',
+            title: 'Ticket Resolved',
+            message: `Ticket "${ticket.subject}" has been resolved`,
+            ticketId: ticket.id,
+            priority: 'normal',
+            actionRequired: false,
+          });
+        }
+      }
+      
+      res.json({ message: "Ticket status updated successfully" });
+    } catch (error) {
+      console.error("Error updating ticket status:", error);
+      res.status(500).json({ message: "Failed to update ticket status" });
+    }
+  });
+
+  app.patch('/api/admin/support-tickets/:id/priority', isAdmin, async (req, res) => {
+    try {
+      const { priority } = req.body;
+      await storage.updateTicketPriority(req.params.id, priority);
+      res.json({ message: "Ticket priority updated successfully" });
+    } catch (error) {
+      console.error("Error updating ticket priority:", error);
+      res.status(500).json({ message: "Failed to update ticket priority" });
+    }
+  });
+
+  app.patch('/api/admin/support-tickets/:id/assign', isAdmin, async (req: any, res) => {
+    try {
+      const { adminId } = req.body;
+      await storage.assignTicketToAdmin(req.params.id, adminId || req.user.id);
+      
+      // Create notification for assigned admin
+      if (adminId && adminId !== req.user.id) {
+        const ticket = await storage.getSupportTicket(req.params.id);
+        if (ticket) {
+          await storage.createAdminNotification({
+            adminId,
+            type: 'assignment',
+            title: 'Ticket Assigned',
+            message: `You have been assigned ticket: ${ticket.subject}`,
+            ticketId: ticket.id,
+            priority: ticket.priority === 'urgent' ? 'urgent' : 'normal',
+            actionRequired: true,
+          });
+        }
+      }
+      
+      res.json({ message: "Ticket assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning ticket:", error);
+      res.status(500).json({ message: "Failed to assign ticket" });
+    }
+  });
+
+  app.post('/api/admin/support-tickets/:id/escalate', isAdmin, async (req: any, res) => {
+    try {
+      const { reason } = req.body;
+      await storage.escalateTicket(req.params.id, req.user.id, reason);
+      
+      // Create escalation notifications for all admins
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (ticket) {
+        const admins = await storage.getAllUsers();
+        const adminUsers = admins.filter(user => user.role === 'admin' && user.id !== req.user.id);
+        
+        for (const admin of adminUsers) {
+          await storage.createAdminNotification({
+            adminId: admin.id,
+            type: 'escalation',
+            title: 'Ticket Escalated',
+            message: `Ticket "${ticket.subject}" has been escalated: ${reason}`,
+            ticketId: ticket.id,
+            priority: 'urgent',
+            actionRequired: true,
+          });
+        }
+      }
+      
+      res.json({ message: "Ticket escalated successfully" });
+    } catch (error) {
+      console.error("Error escalating ticket:", error);
+      res.status(500).json({ message: "Failed to escalate ticket" });
+    }
+  });
+
+  app.post('/api/admin/support-tickets/:id/resolve', isAdmin, async (req: any, res) => {
+    try {
+      const { resolutionNotes } = req.body;
+      await storage.resolveTicket(req.params.id, req.user.id, resolutionNotes);
+      res.json({ message: "Ticket resolved successfully" });
+    } catch (error) {
+      console.error("Error resolving ticket:", error);
+      res.status(500).json({ message: "Failed to resolve ticket" });
+    }
+  });
+
+  // Admin notification routes
+  app.get('/api/admin/notifications', isAdmin, async (req: any, res) => {
+    try {
+      const notifications = await storage.getAdminNotifications(req.user.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching admin notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get('/api/admin/notifications/unread', isAdmin, async (req: any, res) => {
+    try {
+      const notifications = await storage.getUnreadNotifications(req.user.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching unread notifications:", error);
+      res.status(500).json({ message: "Failed to fetch unread notifications" });
+    }
+  });
+
+  app.patch('/api/admin/notifications/:id/read', isAdmin, async (req, res) => {
+    try {
+      await storage.markNotificationAsRead(req.params.id);
+      res.json({ message: "Notification marked as read" });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.patch('/api/admin/notifications/read-all', isAdmin, async (req: any, res) => {
+    try {
+      await storage.markAllNotificationsAsRead(req.user.id);
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
   app.get('/api/chat/:sessionId', async (req, res) => {
     try {
       const messages = await storage.getChatMessages(req.params.sessionId);
@@ -644,15 +867,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const message = await storage.saveChatMessage({
         sessionId: req.params.sessionId,
+        ticketId: req.body.ticketId,
         userId: req.body.userId,
         isCustomer: req.body.isCustomer,
         message: req.body.message,
+        messageType: req.body.messageType || 'text',
         attachmentUrls: req.body.attachmentUrls,
       });
+      
+      // Create notification for admins when customer sends message
+      if (req.body.isCustomer && req.body.ticketId) {
+        const ticket = await storage.getSupportTicket(req.body.ticketId);
+        if (ticket) {
+          const targetAdminId = ticket.assignedTo;
+          if (targetAdminId) {
+            await storage.createAdminNotification({
+              adminId: targetAdminId,
+              type: 'customer_response',
+              title: 'Customer Response',
+              message: `New message from ${ticket.customerName}`,
+              ticketId: ticket.id,
+              priority: 'normal',
+              actionRequired: true,
+            });
+          }
+        }
+      }
+      
       res.status(201).json(message);
     } catch (error) {
       console.error("Error saving chat message:", error);
       res.status(500).json({ message: "Failed to save chat message" });
+    }
+  });
+
+  app.get('/api/admin/chat/ticket/:ticketId', isAdmin, async (req, res) => {
+    try {
+      const messages = await storage.getChatMessagesByTicket(req.params.ticketId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching ticket chat messages:", error);
+      res.status(500).json({ message: "Failed to fetch ticket chat messages" });
     }
   });
 
