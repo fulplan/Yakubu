@@ -44,7 +44,10 @@ import {
   Zap,
   Timer,
   UserCog,
-  PhoneCall
+  PhoneCall,
+  MapPin,
+  Truck,
+  AlertCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1131,7 +1134,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-8" data-testid="admin-tabs">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 gap-2 h-auto p-2 bg-muted">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-7 gap-2 h-auto p-2 bg-muted">
             <TabsTrigger 
               value="overview" 
               data-testid="tab-overview"
@@ -1147,6 +1150,14 @@ export default function Admin() {
             >
               <Package className="h-5 w-5 mb-1 md:hidden" />
               <span className="font-medium">Consignments</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="tracking" 
+              data-testid="tab-tracking"
+              className="flex flex-col items-center justify-center p-4 text-xs md:text-sm min-h-[60px] md:min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <MapPin className="h-5 w-5 mb-1 md:hidden" />
+              <span className="font-medium">Tracking</span>
             </TabsTrigger>
             <TabsTrigger 
               value="claims" 
@@ -2155,6 +2166,200 @@ export default function Admin() {
                       </p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Tracking Tab */}
+          <TabsContent value="tracking" className="space-y-6" data-testid="tracking-content">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Tracking Overview */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <MapPin className="h-5 w-5 mr-2" />
+                    Consignment Tracking Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-blue-600 dark:text-blue-400">In Transit</p>
+                              <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">5</p>
+                            </div>
+                            <Truck className="h-8 w-8 text-blue-600" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-green-50 dark:bg-green-900/20 border-green-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-green-600 dark:text-green-400">In Vault</p>
+                              <p className="text-2xl font-bold text-green-800 dark:text-green-200">15</p>
+                            </div>
+                            <Shield className="h-8 w-8 text-green-600" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Under Review</p>
+                              <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">3</p>
+                            </div>
+                            <AlertCircle className="h-8 w-8 text-orange-600" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Consignment List for Tracking */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Consignments Tracking</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {consignments.slice(0, 5).map((consignment: any) => (
+                      <div key={consignment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-4">
+                            <div className="text-2xl">
+                              {(() => {
+                                const statusEmojis = {
+                                  received: '📦',
+                                  in_vault: '🏦',
+                                  under_review: '🔍',
+                                  in_transit: '🚚',
+                                  delivered: '✅',
+                                  rejected: '❌'
+                                };
+                                return statusEmojis[consignment.trackingStatus as keyof typeof statusEmojis] || '📋';
+                              })()}
+                            </div>
+                            <div>
+                              <p className="font-medium">{consignment.trackingId || consignment.consignmentNumber}</p>
+                              <p className="text-sm text-muted-foreground">{consignment.userEmail}</p>
+                              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                                <span>Status: {(consignment.trackingStatus || 'received').replace('_', ' ')}</span>
+                                {consignment.currentLocation && (
+                                  <>
+                                    <span>•</span>
+                                    <span>📍 {consignment.currentLocation}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              // Open tracking update dialog
+                              console.log('Update tracking for:', consignment.id);
+                            }}
+                          >
+                            <MapPin className="h-4 w-4 mr-1" />
+                            Update
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              // Schedule future update
+                              console.log('Schedule update for:', consignment.id);
+                            }}
+                          >
+                            <Clock className="h-4 w-4 mr-1" />
+                            Schedule
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {consignments.length === 0 && (
+                      <div className="text-center py-12">
+                        <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                        <h4 className="text-lg font-semibold mb-2">No Consignments Yet</h4>
+                        <p className="text-muted-foreground">
+                          Consignments will appear here once customers start submitting items.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions for Tracking */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Quick Tracking Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      className="h-20 flex flex-col items-center justify-center"
+                      variant="outline"
+                      onClick={() => {
+                        // Bulk update multiple consignments
+                        console.log('Bulk update tracking');
+                      }}
+                    >
+                      <Truck className="h-6 w-6 mb-2" />
+                      Bulk Status Update
+                    </Button>
+                    
+                    <Button 
+                      className="h-20 flex flex-col items-center justify-center"
+                      variant="outline"
+                      onClick={() => {
+                        // Send notifications to all customers with pending updates
+                        console.log('Send tracking notifications');
+                      }}
+                    >
+                      <Bell className="h-6 w-6 mb-2" />
+                      Send Notifications
+                    </Button>
+                    
+                    <Button 
+                      className="h-20 flex flex-col items-center justify-center"
+                      variant="outline"
+                      onClick={() => {
+                        // View public tracking portal
+                        window.open('/track', '_blank');
+                      }}
+                    >
+                      <Eye className="h-6 w-6 mb-2" />
+                      View Public Portal
+                    </Button>
+                    
+                    <Button 
+                      className="h-20 flex flex-col items-center justify-center"
+                      variant="outline"
+                      onClick={() => {
+                        // Export tracking report
+                        console.log('Export tracking report');
+                      }}
+                    >
+                      <FileText className="h-6 w-6 mb-2" />
+                      Export Report
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>

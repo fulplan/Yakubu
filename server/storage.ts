@@ -8,6 +8,9 @@ import {
   supportTickets,
   chatMessages,
   adminNotifications,
+  trackingUpdates,
+  scheduledUpdates,
+  customerNotifications,
   accountTransactions,
   goldHoldings,
   storagePlans,
@@ -28,6 +31,12 @@ import {
   type InsertChatMessage,
   type AdminNotification,
   type InsertAdminNotification,
+  type TrackingUpdate,
+  type InsertTrackingUpdate,
+  type ScheduledUpdate,
+  type InsertScheduledUpdate,
+  type CustomerNotification,
+  type InsertCustomerNotification,
   type AccountTransaction,
   type InsertAccountTransaction,
   type GoldHolding,
@@ -127,6 +136,25 @@ export interface IStorage {
   // Storage plans
   getStoragePlans(): Promise<StoragePlan[]>;
   getStoragePlan(id: string): Promise<StoragePlan | undefined>;
+  
+  // Tracking operations
+  createTrackingUpdate(update: InsertTrackingUpdate): Promise<TrackingUpdate>;
+  getTrackingUpdates(consignmentId: string): Promise<TrackingUpdate[]>;
+  getPublicTrackingUpdates(trackingId: string): Promise<TrackingUpdate[]>;
+  updateConsignmentTrackingStatus(consignmentId: string, status: string, location?: string): Promise<void>;
+  getConsignmentByTrackingId(trackingId: string): Promise<Consignment | undefined>;
+  
+  // Scheduled updates
+  createScheduledUpdate(update: InsertScheduledUpdate): Promise<ScheduledUpdate>;
+  getScheduledUpdates(consignmentId: string): Promise<ScheduledUpdate[]>;
+  getPendingScheduledUpdates(): Promise<ScheduledUpdate[]>;
+  executeScheduledUpdate(updateId: string): Promise<void>;
+  
+  // Customer notifications
+  createCustomerNotification(notification: InsertCustomerNotification): Promise<CustomerNotification>;
+  getCustomerNotifications(userId: string): Promise<CustomerNotification[]>;
+  markNotificationAsDelivered(notificationId: string): Promise<void>;
+  markNotificationAsRead(notificationId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -852,6 +880,157 @@ export class DatabaseStorage implements IStorage {
       .slice(0, 100);
 
     return allActivities;
+  }
+
+  // Storage plans implementation
+  async getStoragePlans(): Promise<StoragePlan[]> {
+    return await db.select().from(storagePlans).where(eq(storagePlans.active, true));
+  }
+
+  async getStoragePlan(id: string): Promise<StoragePlan | undefined> {
+    const [plan] = await db.select().from(storagePlans).where(eq(storagePlans.id, id));
+    return plan;
+  }
+
+  // Tracking operations implementation
+  async createTrackingUpdate(update: InsertTrackingUpdate): Promise<TrackingUpdate> {
+    const [trackingUpdate] = await db
+      .insert(trackingUpdates)
+      .values(update)
+      .returning();
+    
+    // Update the consignment's current tracking status and location
+    await this.updateConsignmentTrackingStatus(
+      update.consignmentId,
+      update.status,
+      update.location
+    );
+    
+    return trackingUpdate;
+  }
+
+  async getTrackingUpdates(consignmentId: string): Promise<TrackingUpdate[]> {
+    return await db
+      .select()
+      .from(trackingUpdates)
+      .where(eq(trackingUpdates.consignmentId, consignmentId))
+      .orderBy(desc(trackingUpdates.createdAt));
+  }
+
+  async getPublicTrackingUpdates(trackingId: string): Promise<TrackingUpdate[]> {
+    // First get the consignment by tracking ID
+    const consignment = await this.getConsignmentByTrackingId(trackingId);
+    if (!consignment) {
+      return [];
+    }
+
+    // Get only public tracking updates for this consignment
+    return await db
+      .select()
+      .from(trackingUpdates)
+      .where(and(
+        eq(trackingUpdates.consignmentId, consignment.id),
+        eq(trackingUpdates.isPublic, true)
+      ))
+      .orderBy(desc(trackingUpdates.createdAt));
+  }
+
+  async updateConsignmentTrackingStatus(consignmentId: string, status: string, location?: string): Promise<void> {
+    const updateData: any = {
+      trackingStatus: status,
+      updatedAt: new Date()
+    };
+    
+    if (location) {
+      updateData.currentLocation = location;
+    }
+    
+    await db
+      .update(consignments)
+      .set(updateData)
+      .where(eq(consignments.id, consignmentId));
+  }
+
+  async getConsignmentByTrackingId(trackingId: string): Promise<Consignment | undefined> {
+    const [consignment] = await db
+      .select()
+      .from(consignments)
+      .where(eq(consignments.trackingId, trackingId));
+    return consignment;
+  }
+
+  // Scheduled updates implementation
+  async createScheduledUpdate(update: InsertScheduledUpdate): Promise<ScheduledUpdate> {
+    const [scheduledUpdate] = await db
+      .insert(scheduledUpdates)
+      .values(update)
+      .returning();
+    return scheduledUpdate;
+  }
+
+  async getScheduledUpdates(consignmentId: string): Promise<ScheduledUpdate[]> {
+    return await db
+      .select()
+      .from(scheduledUpdates)
+      .where(eq(scheduledUpdates.consignmentId, consignmentId))
+      .orderBy(desc(scheduledUpdates.scheduledFor));
+  }
+
+  async getPendingScheduledUpdates(): Promise<ScheduledUpdate[]> {
+    return await db
+      .select()
+      .from(scheduledUpdates)
+      .where(and(
+        eq(scheduledUpdates.executed, false),
+        sql`${scheduledUpdates.scheduledFor} <= NOW()`
+      ))
+      .orderBy(scheduledUpdates.scheduledFor);
+  }
+
+  async executeScheduledUpdate(updateId: string): Promise<void> {
+    await db
+      .update(scheduledUpdates)
+      .set({
+        executed: true,
+        executedAt: new Date()
+      })
+      .where(eq(scheduledUpdates.id, updateId));
+  }
+
+  // Customer notifications implementation
+  async createCustomerNotification(notification: InsertCustomerNotification): Promise<CustomerNotification> {
+    const [customerNotification] = await db
+      .insert(customerNotifications)
+      .values(notification)
+      .returning();
+    return customerNotification;
+  }
+
+  async getCustomerNotifications(userId: string): Promise<CustomerNotification[]> {
+    return await db
+      .select()
+      .from(customerNotifications)
+      .where(eq(customerNotifications.userId, userId))
+      .orderBy(desc(customerNotifications.createdAt));
+  }
+
+  async markNotificationAsDelivered(notificationId: string): Promise<void> {
+    await db
+      .update(customerNotifications)
+      .set({
+        delivered: true,
+        deliveredAt: new Date()
+      })
+      .where(eq(customerNotifications.id, notificationId));
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    await db
+      .update(customerNotifications)
+      .set({
+        readAt: new Date()
+      })
+      .where(eq(customerNotifications.id, notificationId));
   }
 }
 

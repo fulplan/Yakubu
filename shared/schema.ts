@@ -42,14 +42,17 @@ export const consignments = pgTable("consignments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   consignmentNumber: varchar("consignment_number").unique().notNull(),
+  trackingId: varchar("tracking_id").unique().notNull(), // Public tracking ID for customers
   description: text("description").notNull(),
   weight: decimal("weight", { precision: 10, scale: 4 }).notNull(),
   purity: decimal("purity", { precision: 5, scale: 3 }).notNull(),
   estimatedValue: decimal("estimated_value", { precision: 12, scale: 2 }).notNull(),
   status: varchar("status").notNull().default("pending"), // pending, verified, stored, claimed
+  trackingStatus: varchar("tracking_status").notNull().default("received"), // received, in_vault, under_review, in_transit, delivered, rejected
   storagePlan: varchar("storage_plan").notNull(), // standard, premium
   insuranceEnabled: boolean("insurance_enabled").default(true),
   vaultLocation: varchar("vault_location"),
+  currentLocation: varchar("current_location"), // Current physical location for tracking
   certificateUrl: text("certificate_url"),
   qrCode: text("qr_code"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -170,6 +173,53 @@ export const adminNotifications = pgTable("admin_notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Tracking status updates table
+export const trackingUpdates = pgTable("tracking_updates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  consignmentId: varchar("consignment_id").notNull().references(() => consignments.id),
+  status: varchar("status").notNull(), // received, in_vault, under_review, in_transit, delivered, rejected
+  location: varchar("location"), // Current location (warehouse name, geolocation, etc.)
+  description: text("description").notNull(),
+  adminId: varchar("admin_id").notNull().references(() => users.id), // Admin who made the update
+  customerNotified: boolean("customer_notified").default(false),
+  notificationSentAt: timestamp("notification_sent_at"),
+  isPublic: boolean("is_public").default(true), // Whether this update is visible on public tracking
+  metadata: jsonb("metadata"), // Additional tracking data like coordinates, carrier info
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Scheduled tracking updates table
+export const scheduledUpdates = pgTable("scheduled_updates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  consignmentId: varchar("consignment_id").notNull().references(() => consignments.id),
+  scheduledStatus: varchar("scheduled_status").notNull(),
+  scheduledLocation: varchar("scheduled_location"),
+  description: text("description").notNull(),
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  adminId: varchar("admin_id").notNull().references(() => users.id),
+  executed: boolean("executed").default(false),
+  executedAt: timestamp("executed_at"),
+  notifyCustomer: boolean("notify_customer").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Customer notifications table for tracking updates
+export const customerNotifications = pgTable("customer_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  customerEmail: varchar("customer_email"), // For users without accounts
+  consignmentId: varchar("consignment_id").notNull().references(() => consignments.id),
+  trackingUpdateId: varchar("tracking_update_id").references(() => trackingUpdates.id),
+  type: varchar("type").notNull(), // status_update, delivery_notification, schedule_change
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  notificationMethod: varchar("notification_method").notNull().default("email"), // email, push, sms
+  delivered: boolean("delivered").default(false),
+  deliveredAt: timestamp("delivered_at"),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Account transactions table for credit/debit functionality
 export const accountTransactions = pgTable("account_transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -218,6 +268,9 @@ export const consignmentsRelations = relations(consignments, ({ one, many }) => 
     references: [users.id],
   }),
   events: many(consignmentEvents),
+  trackingUpdates: many(trackingUpdates),
+  scheduledUpdates: many(scheduledUpdates),
+  customerNotifications: many(customerNotifications),
 }));
 
 export const consignmentEventsRelations = relations(consignmentEvents, ({ one }) => ({
@@ -290,6 +343,43 @@ export const adminNotificationsRelations = relations(adminNotifications, ({ one 
   }),
 }));
 
+export const trackingUpdatesRelations = relations(trackingUpdates, ({ one }) => ({
+  consignment: one(consignments, {
+    fields: [trackingUpdates.consignmentId],
+    references: [consignments.id],
+  }),
+  admin: one(users, {
+    fields: [trackingUpdates.adminId],
+    references: [users.id],
+  }),
+}));
+
+export const scheduledUpdatesRelations = relations(scheduledUpdates, ({ one }) => ({
+  consignment: one(consignments, {
+    fields: [scheduledUpdates.consignmentId],
+    references: [consignments.id],
+  }),
+  admin: one(users, {
+    fields: [scheduledUpdates.adminId],
+    references: [users.id],
+  }),
+}));
+
+export const customerNotificationsRelations = relations(customerNotifications, ({ one }) => ({
+  user: one(users, {
+    fields: [customerNotifications.userId],
+    references: [users.id],
+  }),
+  consignment: one(consignments, {
+    fields: [customerNotifications.consignmentId],
+    references: [consignments.id],
+  }),
+  trackingUpdate: one(trackingUpdates, {
+    fields: [customerNotifications.trackingUpdateId],
+    references: [trackingUpdates.id],
+  }),
+}));
+
 // Zod schemas
 export const insertConsignmentSchema = createInsertSchema(consignments).omit({
   id: true,
@@ -334,6 +424,25 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
 export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertTrackingUpdateSchema = createInsertSchema(trackingUpdates).omit({
+  id: true,
+  createdAt: true,
+  notificationSentAt: true,
+});
+
+export const insertScheduledUpdateSchema = createInsertSchema(scheduledUpdates).omit({
+  id: true,
+  createdAt: true,
+  executedAt: true,
+});
+
+export const insertCustomerNotificationSchema = createInsertSchema(customerNotifications).omit({
+  id: true,
+  createdAt: true,
+  deliveredAt: true,
+  readAt: true,
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -387,3 +496,12 @@ export type InsertGoldHolding = z.infer<typeof insertGoldHoldingSchema>;
 export type GoldHolding = typeof goldHoldings.$inferSelect;
 
 export type StoragePlan = typeof storagePlans.$inferSelect;
+
+export type InsertTrackingUpdate = z.infer<typeof insertTrackingUpdateSchema>;
+export type TrackingUpdate = typeof trackingUpdates.$inferSelect;
+
+export type InsertScheduledUpdate = z.infer<typeof insertScheduledUpdateSchema>;
+export type ScheduledUpdate = typeof scheduledUpdates.$inferSelect;
+
+export type InsertCustomerNotification = z.infer<typeof insertCustomerNotificationSchema>;
+export type CustomerNotification = typeof customerNotifications.$inferSelect;

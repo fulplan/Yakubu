@@ -911,6 +911,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tracking API Routes
+
+  // Public tracking (no auth required)
+  app.get('/api/tracking/:trackingId', async (req, res) => {
+    try {
+      const trackingId = req.params.trackingId;
+      const updates = await storage.getPublicTrackingUpdates(trackingId);
+      const consignment = await storage.getConsignmentByTrackingId(trackingId);
+      
+      if (!consignment) {
+        return res.status(404).json({ message: "Tracking ID not found" });
+      }
+
+      res.json({
+        trackingId: consignment.trackingId,
+        status: consignment.trackingStatus,
+        location: consignment.currentLocation,
+        updates: updates.map(update => ({
+          status: update.status,
+          description: update.description,
+          location: update.location,
+          timestamp: update.createdAt
+        }))
+      });
+    } catch (error) {
+      console.error("Error fetching tracking info:", error);
+      res.status(500).json({ message: "Failed to fetch tracking info" });
+    }
+  });
+
+  // Admin tracking management
+  app.get('/api/admin/tracking/consignments', isAdmin, async (req, res) => {
+    try {
+      const consignments = await storage.getAllConsignments();
+      res.json(consignments);
+    } catch (error) {
+      console.error("Error fetching tracking consignments:", error);
+      res.status(500).json({ message: "Failed to fetch consignments for tracking" });
+    }
+  });
+
+  app.post('/api/admin/tracking/:consignmentId/update', isAdmin, async (req: any, res) => {
+    try {
+      const consignmentId = req.params.consignmentId;
+      const { status, location, description, isPublic = true, notifyCustomer = true } = req.body;
+      
+      const trackingUpdate = await storage.createTrackingUpdate({
+        consignmentId,
+        status,
+        location,
+        description,
+        adminId: req.user.id,
+        isPublic,
+        customerNotified: false,
+        metadata: {}
+      });
+
+      // Send customer notification if requested
+      if (notifyCustomer) {
+        const consignment = await storage.getConsignment(consignmentId);
+        if (consignment) {
+          const statusEmojis = {
+            received: '📦',
+            in_vault: '🏦',
+            under_review: '🔍',
+            in_transit: '🚚',
+            delivered: '✅',
+            rejected: '❌'
+          };
+          
+          const emoji = statusEmojis[status as keyof typeof statusEmojis] || '📋';
+          const title = `Consignment Status Update`;
+          const message = `${emoji} Your consignment #${consignment.trackingId} is now ${status.replace('_', ' ')}.`;
+          
+          await storage.createCustomerNotification({
+            userId: consignment.userId,
+            consignmentId,
+            trackingUpdateId: trackingUpdate.id,
+            type: 'status_update',
+            title,
+            message: `${message} ${description ? description : ''}`,
+            notificationMethod: 'email',
+            delivered: false
+          });
+        }
+      }
+
+      res.status(201).json(trackingUpdate);
+    } catch (error) {
+      console.error("Error creating tracking update:", error);
+      res.status(500).json({ message: "Failed to create tracking update" });
+    }
+  });
+
+  app.get('/api/admin/tracking/:consignmentId/updates', isAdmin, async (req, res) => {
+    try {
+      const updates = await storage.getTrackingUpdates(req.params.consignmentId);
+      res.json(updates);
+    } catch (error) {
+      console.error("Error fetching tracking updates:", error);
+      res.status(500).json({ message: "Failed to fetch tracking updates" });
+    }
+  });
+
+  // Scheduled updates
+  app.post('/api/admin/tracking/:consignmentId/schedule', isAdmin, async (req: any, res) => {
+    try {
+      const consignmentId = req.params.consignmentId;
+      const { scheduledStatus, scheduledLocation, description, scheduledFor, notifyCustomer = true } = req.body;
+      
+      const scheduledUpdate = await storage.createScheduledUpdate({
+        consignmentId,
+        scheduledStatus,
+        scheduledLocation,
+        description,
+        scheduledFor: new Date(scheduledFor),
+        adminId: req.user.id,
+        notifyCustomer,
+        executed: false
+      });
+
+      res.status(201).json(scheduledUpdate);
+    } catch (error) {
+      console.error("Error creating scheduled update:", error);
+      res.status(500).json({ message: "Failed to create scheduled update" });
+    }
+  });
+
+  app.get('/api/admin/tracking/:consignmentId/scheduled', isAdmin, async (req, res) => {
+    try {
+      const updates = await storage.getScheduledUpdates(req.params.consignmentId);
+      res.json(updates);
+    } catch (error) {
+      console.error("Error fetching scheduled updates:", error);
+      res.status(500).json({ message: "Failed to fetch scheduled updates" });
+    }
+  });
+
+  // Customer notifications
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const notifications = await storage.getCustomerNotifications(req.user.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching customer notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.patch('/api/notifications/:id/read', isAuthenticated, async (req, res) => {
+    try {
+      await storage.markNotificationAsRead(req.params.id);
+      res.json({ message: "Notification marked as read" });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

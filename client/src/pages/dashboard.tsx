@@ -33,7 +33,11 @@ import {
   Package,
   Home,
   LogOut,
-  User
+  User,
+  Bell,
+  BellRing,
+  Clock as ClockIcon,
+  MapPin
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -48,7 +52,7 @@ export default function Dashboard() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab && ['portfolio', 'consignments', 'certificates', 'inheritance', 'tracking'].includes(tab)) {
+    if (tab && ['portfolio', 'consignments', 'certificates', 'inheritance', 'tracking', 'notifications'].includes(tab)) {
       setActiveTab(tab);
       // Clean up URL without triggering page reload
       window.history.replaceState({}, '', window.location.pathname);
@@ -109,6 +113,12 @@ export default function Dashboard() {
   // Fetch user gold holdings
   const { data: goldHoldings = [] } = useQuery({
     queryKey: ["/api/gold/holdings"],
+    enabled: !!user,
+  });
+
+  // Fetch customer notifications
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["/api/notifications"],
     enabled: !!user,
   });
 
@@ -401,7 +411,7 @@ export default function Dashboard() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-8" data-testid="dashboard-tabs">
           {/* Desktop Tabs - Hidden on Mobile */}
-          <TabsList className="hidden md:grid w-full grid-cols-5 gap-2 h-auto p-2 bg-muted">
+          <TabsList className="hidden md:grid w-full grid-cols-6 gap-2 h-auto p-2 bg-muted">
             <TabsTrigger 
               value="portfolio" 
               data-testid="tab-portfolio"

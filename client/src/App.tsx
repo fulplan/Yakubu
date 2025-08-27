@@ -9,6 +9,7 @@ import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Consignment from "@/pages/consignment";
 import Tracking from "@/pages/tracking";
+import TrackingPortal from "@/pages/track";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import AuthPage from "@/pages/auth-page";
@@ -18,6 +19,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Public routes available to everyone */}
+      <Route path="/track" component={TrackingPortal} />
+      
       {isLoading || !isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
