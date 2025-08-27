@@ -36,7 +36,15 @@ import {
   Settings,
   Eye,
   FileQuestion,
-  Send
+  Send,
+  Bell,
+  BellRing,
+  Headphones,
+  ArrowUp,
+  Zap,
+  Timer,
+  UserCog,
+  PhoneCall
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -741,6 +749,20 @@ export default function Admin() {
   const [resolutionDialog, setResolutionDialog] = useState(false);
   const [resolutionType, setResolutionType] = useState("");
   const [resolutionDetails, setResolutionDetails] = useState("");
+  
+  // Support System State
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [ticketFilter, setTicketFilter] = useState("all");
+  const [supportResponse, setSupportResponse] = useState("");
+  const [escalationDialog, setEscalationDialog] = useState(false);
+  const [escalationReason, setEscalationReason] = useState("");
+  const [escalationTo, setEscalationTo] = useState("");
+  const [chatDialog, setChatDialog] = useState(false);
+  const [activeChatUser, setActiveChatUser] = useState<any>(null);
+  const [chatMessage, setChatMessage] = useState("");
+  const [notificationDialog, setNotificationDialog] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationUsers, setNotificationUsers] = useState<string[]>([]);
 
   // Auth protection
   useEffect(() => {
@@ -1647,25 +1669,329 @@ export default function Admin() {
             <UserManagement />
           </TabsContent>
 
-          {/* Support Tab */}
+          {/* Enhanced Support Tab */}
           <TabsContent value="support" className="space-y-6" data-testid="support-content">
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Support</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h4 className="text-lg font-semibold mb-2">Support Dashboard</h4>
-                  <p className="text-muted-foreground mb-4">
-                    Live chat support features will be implemented here.
-                  </p>
-                  <Button variant="outline" data-testid="button-manage-support">
-                    Manage Support Tickets
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* Support Overview Cards */}
+              <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Open Tickets</p>
+                        <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">12</p>
+                      </div>
+                      <MessageSquare className="h-8 w-8 text-blue-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-green-50 dark:bg-green-900/20 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-green-600 dark:text-green-400">Active Chats</p>
+                        <p className="text-2xl font-bold text-green-800 dark:text-green-200">3</p>
+                      </div>
+                      <MessageCircle className="h-8 w-8 text-green-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Escalated</p>
+                        <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">2</p>
+                      </div>
+                      <ArrowUp className="h-8 w-8 text-orange-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Avg Response</p>
+                        <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">2.5m</p>
+                      </div>
+                      <Timer className="h-8 w-8 text-purple-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Support Tickets List */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Headphones className="h-5 w-5" />
+                      Support Tickets
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Select value={ticketFilter} onValueChange={setTicketFilter}>
+                        <SelectTrigger className="w-[140px]" data-testid="select-ticket-filter">
+                          <SelectValue placeholder="Filter tickets" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Tickets</SelectItem>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="escalated">Escalated</SelectItem>
+                          <SelectItem value="resolved">Resolved</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={() => setNotificationDialog(true)}
+                        variant="outline" 
+                        size="sm"
+                        data-testid="button-send-notifications"
+                      >
+                        <Bell className="h-4 w-4 mr-1" />
+                        Notify
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="max-h-[500px] overflow-y-auto">
+                  {/* Mock tickets - in real app this would come from API */}
+                  {[
+                    { id: 1, customer: "John Smith", email: "john@example.com", subject: "Consignment Status Inquiry", priority: "high", status: "open", lastMessage: "Need update on my gold delivery", time: "2 min ago", unread: 3 },
+                    { id: 2, customer: "Sarah Wilson", email: "sarah@example.com", subject: "Account Balance Question", priority: "normal", status: "pending", lastMessage: "My account shows incorrect balance", time: "15 min ago", unread: 1 },
+                    { id: 3, customer: "Mike Johnson", email: "mike@example.com", subject: "Storage Plan Change", priority: "low", status: "escalated", lastMessage: "Want to upgrade storage plan", time: "1 hour ago", unread: 0 },
+                    { id: 4, customer: "Emily Davis", email: "emily@example.com", subject: "Inheritance Claim Help", priority: "urgent", status: "open", lastMessage: "Need help with documentation", time: "3 hours ago", unread: 2 }
+                  ].filter(ticket => ticketFilter === 'all' || ticket.status === ticketFilter).map((ticket) => (
+                    <Card 
+                      key={ticket.id}
+                      className={`p-4 mb-3 cursor-pointer transition-colors ${
+                        selectedTicket?.id === ticket.id ? 'bg-primary/5 border-primary' : 'hover:bg-muted'
+                      }`}
+                      onClick={() => setSelectedTicket(ticket)}
+                      data-testid={`ticket-${ticket.id}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium">{ticket.customer}</h4>
+                            <Badge 
+                              variant={ticket.priority === 'urgent' || ticket.priority === 'high' ? 'destructive' : 
+                                       ticket.priority === 'normal' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {ticket.priority}
+                            </Badge>
+                            <Badge 
+                              variant={ticket.status === 'escalated' ? 'destructive' : 
+                                       ticket.status === 'open' ? 'default' : 'outline'}
+                              className="text-xs"
+                            >
+                              {ticket.status}
+                            </Badge>
+                            {ticket.unread > 0 && (
+                              <Badge variant="destructive" className="text-xs">
+                                {ticket.unread} new
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">{ticket.subject}</p>
+                          <p className="text-sm text-muted-foreground mb-2">{ticket.email}</p>
+                          <p className="text-sm">{ticket.lastMessage}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{ticket.time}</p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveChatUser(ticket);
+                              setChatDialog(true);
+                            }}
+                            data-testid={`button-chat-${ticket.id}`}
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                          {ticket.status !== 'escalated' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTicket(ticket);
+                                setEscalationDialog(true);
+                              }}
+                              data-testid={`button-escalate-${ticket.id}`}
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Ticket Details & Response */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCog className="h-5 w-5" />
+                    Ticket Response
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedTicket ? (
+                    <div className="space-y-4">
+                      {/* Ticket Info */}
+                      <div className="bg-muted/50 p-4 rounded-lg">
+                        <h4 className="font-medium mb-2">Ticket Details</h4>
+                        <div className="space-y-1 text-sm">
+                          <p><span className="text-muted-foreground">Customer:</span> {selectedTicket.customer}</p>
+                          <p><span className="text-muted-foreground">Email:</span> {selectedTicket.email}</p>
+                          <p><span className="text-muted-foreground">Subject:</span> {selectedTicket.subject}</p>
+                          <p><span className="text-muted-foreground">Status:</span> 
+                            <Badge variant="outline" className="ml-2 text-xs">{selectedTicket.status}</Badge>
+                          </p>
+                          <p><span className="text-muted-foreground">Priority:</span> 
+                            <Badge variant={selectedTicket.priority === 'urgent' || selectedTicket.priority === 'high' ? 'destructive' : 'default'} className="ml-2 text-xs">
+                              {selectedTicket.priority}
+                            </Badge>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Conversation History */}
+                      <div>
+                        <h4 className="font-medium mb-2">Conversation</h4>
+                        <div className="space-y-2 max-h-32 overflow-y-auto bg-muted/30 p-3 rounded">
+                          <div className="text-sm">
+                            <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded mb-2">
+                              <span className="font-medium text-blue-800 dark:text-blue-200">Customer:</span>
+                              <p className="text-blue-700 dark:text-blue-300">{selectedTicket.lastMessage}</p>
+                              <span className="text-xs text-blue-600 dark:text-blue-400">{selectedTicket.time}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div className="flex gap-2 mb-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setSupportResponse("Thank you for contacting us. I understand your concern and I'm here to help resolve this matter promptly.")}
+                          data-testid="button-template-acknowledge"
+                        >
+                          Acknowledge
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setSupportResponse("I've reviewed your case and need additional information to provide the best assistance. Could you please provide...")}
+                          data-testid="button-template-info-request"
+                        >
+                          Request Info
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setSupportResponse("Great news! I've resolved your inquiry. Your issue has been addressed and you should see the changes reflected shortly.")}
+                          data-testid="button-template-resolved"
+                        >
+                          Resolved
+                        </Button>
+                      </div>
+
+                      {/* Response Input */}
+                      <div>
+                        <Label htmlFor="supportResponse">Your Response</Label>
+                        <Textarea
+                          id="supportResponse"
+                          value={supportResponse}
+                          onChange={(e) => setSupportResponse(e.target.value)}
+                          placeholder="Type your response to the customer..."
+                          rows={5}
+                          data-testid="textarea-support-response"
+                        />
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            if (supportResponse.trim()) {
+                              toast({
+                                title: "Response Sent",
+                                description: `Response sent to ${selectedTicket.customer}`,
+                              });
+                              setSupportResponse("");
+                            }
+                          }}
+                          disabled={!supportResponse.trim()}
+                          className="flex-1"
+                          data-testid="button-send-response"
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          Send Response
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setActiveChatUser(selectedTicket);
+                            setChatDialog(true);
+                          }}
+                          data-testid="button-start-chat"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Live Chat
+                        </Button>
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            toast({
+                              title: "Ticket Resolved",
+                              description: `Ticket #${selectedTicket.id} marked as resolved.`,
+                            });
+                          }}
+                          size="sm"
+                          data-testid="button-resolve-ticket"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Mark Resolved
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setEscalationDialog(true);
+                          }}
+                          size="sm"
+                          data-testid="button-escalate-ticket"
+                        >
+                          <ArrowUp className="h-4 w-4 mr-1" />
+                          Escalate
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Headphones className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h4 className="text-lg font-semibold mb-2">Select a Support Ticket</h4>
+                      <p className="text-muted-foreground">
+                        Choose a ticket from the list to view details and respond to the customer.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Analytics Tab */}
@@ -2207,6 +2533,327 @@ export default function Admin() {
                        'Send Request'}
                     </>
                   )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Escalation Dialog */}
+        <Dialog open={escalationDialog} onOpenChange={setEscalationDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ArrowUp className="h-5 w-5 text-orange-600" />
+                Escalate Support Ticket
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Ticket Information</h4>
+                <div className="text-sm space-y-1">
+                  <p><span className="text-muted-foreground">Customer:</span> {selectedTicket?.customer}</p>
+                  <p><span className="text-muted-foreground">Subject:</span> {selectedTicket?.subject}</p>
+                  <p><span className="text-muted-foreground">Current Priority:</span> 
+                    <Badge variant="destructive" className="ml-2 text-xs">{selectedTicket?.priority}</Badge>
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="escalationTo">Escalate To</Label>
+                <Select value={escalationTo} onValueChange={setEscalationTo}>
+                  <SelectTrigger data-testid="select-escalation-target">
+                    <SelectValue placeholder="Select escalation target" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="senior_support">Senior Support Manager</SelectItem>
+                    <SelectItem value="technical_team">Technical Team Lead</SelectItem>
+                    <SelectItem value="legal_team">Legal Department</SelectItem>
+                    <SelectItem value="executive_team">Executive Team</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="escalationReason">Escalation Reason</Label>
+                <Textarea
+                  id="escalationReason"
+                  value={escalationReason}
+                  onChange={(e) => setEscalationReason(e.target.value)}
+                  placeholder="Please provide detailed reason for escalation, current situation, and what resolution is needed..."
+                  rows={5}
+                  data-testid="textarea-escalation-reason"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEscalationDialog(false);
+                    setEscalationReason("");
+                    setEscalationTo("");
+                  }}
+                  data-testid="button-cancel-escalation"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (!escalationReason.trim() || !escalationTo) {
+                      toast({
+                        title: "Missing Information",
+                        description: "Please select escalation target and provide reason.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    toast({
+                      title: "Ticket Escalated",
+                      description: `Ticket escalated to ${escalationTo.replace('_', ' ')} successfully.`,
+                    });
+
+                    setEscalationDialog(false);
+                    setEscalationReason("");
+                    setEscalationTo("");
+                  }}
+                  disabled={!escalationReason.trim() || !escalationTo}
+                  data-testid="button-confirm-escalation"
+                >
+                  <ArrowUp className="h-4 w-4 mr-2" />
+                  Escalate Ticket
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Live Chat Dialog */}
+        <Dialog open={chatDialog} onOpenChange={setChatDialog}>
+          <DialogContent className="max-w-3xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-green-600" />
+                Live Chat - {activeChatUser?.customer}
+                <Badge variant="default" className="bg-green-100 text-green-800 text-xs">Online</Badge>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <div className="text-sm space-y-1">
+                  <p><span className="text-muted-foreground">Customer:</span> {activeChatUser?.customer}</p>
+                  <p><span className="text-muted-foreground">Email:</span> {activeChatUser?.email}</p>
+                  <p><span className="text-muted-foreground">Related Ticket:</span> {activeChatUser?.subject}</p>
+                </div>
+              </div>
+
+              {/* Chat Messages */}
+              <div className="h-[300px] overflow-y-auto border rounded-lg p-4 bg-background">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg max-w-sm">
+                        <p className="text-sm">{activeChatUser?.lastMessage}</p>
+                        <span className="text-xs text-muted-foreground">Customer • {activeChatUser?.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 justify-end">
+                    <div className="flex-1">
+                      <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-sm ml-auto">
+                        <p className="text-sm">Thank you for reaching out. I'm here to help with your inquiry. Let me look into this right away.</p>
+                        <span className="text-xs opacity-80">Admin • Just now</span>
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                      <UserCog className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg max-w-sm">
+                        <p className="text-sm">Great, thanks! I really need this resolved quickly.</p>
+                        <span className="text-xs text-muted-foreground">Customer • Just now</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat Input */}
+              <div className="flex gap-2">
+                <Input
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && chatMessage.trim()) {
+                      toast({
+                        title: "Message Sent",
+                        description: "Your message has been sent to the customer.",
+                      });
+                      setChatMessage("");
+                    }
+                  }}
+                  className="flex-1"
+                  data-testid="input-chat-message"
+                />
+                <Button
+                  onClick={() => {
+                    if (chatMessage.trim()) {
+                      toast({
+                        title: "Message Sent",
+                        description: "Your message has been sent to the customer.",
+                      });
+                      setChatMessage("");
+                    }
+                  }}
+                  disabled={!chatMessage.trim()}
+                  data-testid="button-send-chat"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex justify-between items-center text-sm text-muted-foreground">
+                <span>Customer typing...</span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" data-testid="button-call-customer">
+                    <PhoneCall className="h-4 w-4 mr-1" />
+                    Call
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setChatDialog(false)}
+                    data-testid="button-end-chat"
+                  >
+                    End Chat
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Notification Dialog */}
+        <Dialog open={notificationDialog} onOpenChange={setNotificationDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <BellRing className="h-5 w-5 text-blue-600" />
+                Send Customer Notifications
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Notification Options</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="notify-all"
+                      checked={notificationUsers.includes('all')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setNotificationUsers(['all', 'email', 'sms', 'push']);
+                        } else {
+                          setNotificationUsers([]);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="notify-all" className="text-sm">All active customers</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="notify-support"
+                      checked={notificationUsers.includes('support')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setNotificationUsers([...notificationUsers, 'support']);
+                        } else {
+                          setNotificationUsers(notificationUsers.filter(u => u !== 'support'));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="notify-support" className="text-sm">Customers with open support tickets</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="notify-high-priority"
+                      checked={notificationUsers.includes('high_priority')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setNotificationUsers([...notificationUsers, 'high_priority']);
+                        } else {
+                          setNotificationUsers(notificationUsers.filter(u => u !== 'high_priority'));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="notify-high-priority" className="text-sm">High-value customers only</Label>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="notificationMessage">Notification Message</Label>
+                <Textarea
+                  id="notificationMessage"
+                  value={notificationMessage}
+                  onChange={(e) => setNotificationMessage(e.target.value)}
+                  placeholder="Enter your notification message (maintenance updates, service announcements, etc.)..."
+                  rows={4}
+                  data-testid="textarea-notification"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setNotificationDialog(false);
+                    setNotificationMessage("");
+                    setNotificationUsers([]);
+                  }}
+                  data-testid="button-cancel-notification"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!notificationMessage.trim() || notificationUsers.length === 0) {
+                      toast({
+                        title: "Missing Information",
+                        description: "Please enter a message and select notification targets.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    toast({
+                      title: "Notifications Sent",
+                      description: `Notifications sent to ${notificationUsers.length} user group(s) successfully.`,
+                    });
+
+                    setNotificationDialog(false);
+                    setNotificationMessage("");
+                    setNotificationUsers([]);
+                  }}
+                  disabled={!notificationMessage.trim() || notificationUsers.length === 0}
+                  data-testid="button-send-notification"
+                >
+                  <BellRing className="h-4 w-4 mr-2" />
+                  Send Notifications
                 </Button>
               </div>
             </div>
