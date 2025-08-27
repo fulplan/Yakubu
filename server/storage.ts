@@ -31,6 +31,9 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   createUser(userData: Omit<UpsertUser, 'id'>): Promise<User>;
   getUserByEmail(email: string): Promise<User | null>;
+  getAllUsers(): Promise<User[]>;
+  updateUser(id: string, updates: Partial<UpsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   
   // Consignment operations
   createConsignment(consignment: InsertConsignment): Promise<Consignment>;
@@ -105,6 +108,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.email, email))
       .limit(1);
     return user || null;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUser(id: string, updates: Partial<UpsertUser>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   // Consignment operations

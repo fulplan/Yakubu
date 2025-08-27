@@ -27,8 +27,375 @@ import {
   Shield,
   Clock,
   User,
-  Calendar
+  Calendar,
+  Edit,
+  Trash2,
+  Save,
+  X
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+// User Management Component
+function UserManagement() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    role: 'user'
+  });
+
+  // Fetch all users
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/admin/users"],
+  });
+
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      const response = await apiRequest("POST", "/api/admin/users", userData);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User Created",
+        description: "New user has been created successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setIsCreateDialogOpen(false);
+      setNewUser({ email: '', password: '', firstName: '', lastName: '', role: 'user' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Create User",
+        description: error.message || "An error occurred while creating the user.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiRequest("PATCH", `/api/admin/users/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User Updated",
+        description: "User has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setEditingUser(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Update User",
+        description: error.message || "An error occurred while updating the user.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest("DELETE", `/api/admin/users/${userId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "User Deleted",
+        description: "User has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Delete User",
+        description: error.message || "An error occurred while deleting the user.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateUser = () => {
+    if (!newUser.email || !newUser.password || !newUser.firstName || !newUser.lastName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    createUserMutation.mutate(newUser);
+  };
+
+  const handleUpdateUser = (user: any) => {
+    updateUserMutation.mutate({ id: user.id, data: user });
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    if (confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+      deleteUserMutation.mutate(userId);
+    }
+  };
+
+  if (usersLoading) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading users...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center">
+              <User className="h-5 w-5 mr-2" />
+              User Management ({users.length} users)
+            </CardTitle>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-user">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New User
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New User</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">First Name *</label>
+                      <Input
+                        type="text"
+                        placeholder="John"
+                        value={newUser.firstName}
+                        onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
+                        data-testid="input-first-name"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Last Name *</label>
+                      <Input
+                        type="text"
+                        placeholder="Doe"
+                        value={newUser.lastName}
+                        onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
+                        data-testid="input-last-name"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Email Address *</label>
+                    <Input
+                      type="email"
+                      placeholder="john@example.com"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      data-testid="input-email"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Password *</label>
+                    <Input
+                      type="password"
+                      placeholder="Enter password"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      data-testid="input-password"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Role</label>
+                    <Select value={newUser.role} onValueChange={(value) => setNewUser({ ...newUser, role: value })}>
+                      <SelectTrigger data-testid="select-role">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">Customer</SelectItem>
+                        <SelectItem value="admin">Administrator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsCreateDialogOpen(false)}
+                      data-testid="button-cancel"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleCreateUser}
+                      disabled={createUserMutation.isPending}
+                      data-testid="button-create"
+                    >
+                      {createUserMutation.isPending ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create User
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {users.map((user: any) => (
+              <Card key={user.id} className="p-4" data-testid={`user-${user.id}`}>
+                {editingUser?.id === user.id ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">First Name</label>
+                        <Input
+                          value={editingUser.firstName || ''}
+                          onChange={(e) => setEditingUser({ ...editingUser, firstName: e.target.value })}
+                          data-testid={`edit-first-name-${user.id}`}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Last Name</label>
+                        <Input
+                          value={editingUser.lastName || ''}
+                          onChange={(e) => setEditingUser({ ...editingUser, lastName: e.target.value })}
+                          data-testid={`edit-last-name-${user.id}`}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Email</label>
+                        <Input
+                          value={editingUser.email || ''}
+                          onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                          data-testid={`edit-email-${user.id}`}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Role</label>
+                        <Select 
+                          value={editingUser.role || 'user'} 
+                          onValueChange={(value) => setEditingUser({ ...editingUser, role: value })}
+                        >
+                          <SelectTrigger data-testid={`edit-role-${user.id}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">Customer</SelectItem>
+                            <SelectItem value="admin">Administrator</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditingUser(null)}
+                        data-testid={`button-cancel-edit-${user.id}`}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => handleUpdateUser(editingUser)}
+                        disabled={updateUserMutation.isPending}
+                        data-testid={`button-save-${user.id}`}
+                      >
+                        {updateUserMutation.isPending ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                        <User className="h-6 w-6 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">{user.firstName} {user.lastName}</h4>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <div className="flex items-center mt-1">
+                          <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                            {user.role === 'admin' ? 'Administrator' : 'Customer'}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            Joined {new Date(user.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingUser({ ...user })}
+                        data-testid={`button-edit-${user.id}`}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id)}
+                        disabled={deleteUserMutation.isPending}
+                        data-testid={`button-delete-${user.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+            {users.length === 0 && (
+              <div className="text-center py-12">
+                <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h4 className="text-lg font-semibold mb-2">No Users Found</h4>
+                <p className="text-muted-foreground">Start by creating your first user.</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function Admin() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -496,26 +863,7 @@ export default function Admin() {
 
           {/* Users Tab */}
           <TabsContent value="users" className="space-y-6" data-testid="users-content">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  User Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h4 className="text-lg font-semibold mb-2">User Administration</h4>
-                  <p className="text-muted-foreground mb-4">
-                    Comprehensive user management features will be implemented here including user roles, permissions, and account management.
-                  </p>
-                  <Button variant="outline" data-testid="button-manage-users">
-                    Manage Users
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <UserManagement />
           </TabsContent>
 
           {/* Support Tab */}

@@ -213,6 +213,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin User Management Routes
+  app.get('/api/admin/users', isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post('/api/admin/users', isAdmin, async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, role = 'user' } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists with this email" });
+      }
+
+      // Hash password
+      const { scrypt, randomBytes } = require('crypto');
+      const { promisify } = require('util');
+      const scryptAsync = promisify(scrypt);
+      const salt = randomBytes(16).toString('hex');
+      const buf = await scryptAsync(password, salt, 64);
+      const hashedPassword = `${buf.toString('hex')}.${salt}`;
+
+      const user = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role,
+      });
+
+      // Don't send password back
+      const { password: _, ...userResponse } = user;
+      res.status(201).json(userResponse);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.patch('/api/admin/users/:id', isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const updates = req.body;
+      
+      // If password is being updated, hash it
+      if (updates.password) {
+        const { scrypt, randomBytes } = require('crypto');
+        const { promisify } = require('util');
+        const scryptAsync = promisify(scrypt);
+        const salt = randomBytes(16).toString('hex');
+        const buf = await scryptAsync(updates.password, salt, 64);
+        updates.password = `${buf.toString('hex')}.${salt}`;
+      }
+
+      const user = await storage.updateUser(userId, updates);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Don't send password back
+      const { password: _, ...userResponse } = user;
+      res.json(userResponse);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete('/api/admin/users/:id', isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      await storage.deleteUser(userId);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   // Chat APIs
   app.get('/api/chat/:sessionId', async (req, res) => {
     try {

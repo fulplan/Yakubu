@@ -267,15 +267,64 @@ export default function Dashboard() {
 
           {/* Portfolio Tab */}
           <TabsContent value="portfolio" className="space-y-6" data-testid="portfolio-content">
-            {/* Portfolio Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Live Gold Price Market Overview */}
+            <Card data-testid="live-gold-prices">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Coins className="h-5 w-5 mr-2 text-primary" />
+                  Live Gold Prices (LBMA/COMEX)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">USD per oz</p>
+                      <p className="text-2xl font-bold">${currentGoldPrice.toFixed(2)}</p>
+                      <p className={`text-sm ${goldPrices?.change24h?.usd >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {goldPrices?.change24h?.usd >= 0 ? '+' : ''}{goldPrices?.change24h?.usd?.toFixed(2)}%
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground">
+                      Last updated: {goldPrices?.lastUpdated ? new Date(goldPrices.lastUpdated).toLocaleTimeString() : 'Now'}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">GBP per oz</p>
+                      <p className="text-2xl font-bold">£{goldPrices?.gbp?.toFixed(2) || '1,628.00'}</p>
+                      <p className={`text-sm ${goldPrices?.change24h?.gbp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {goldPrices?.change24h?.gbp >= 0 ? '+' : ''}{goldPrices?.change24h?.gbp?.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">EUR per oz</p>
+                      <p className="text-2xl font-bold">€{goldPrices?.eur?.toFixed(2) || '1,885.00'}</p>
+                      <p className={`text-sm ${goldPrices?.change24h?.eur >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {goldPrices?.change24h?.eur >= 0 ? '+' : ''}{goldPrices?.change24h?.eur?.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Portfolio Analytics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card data-testid="stat-total-value">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Portfolio Value</p>
+                      <p className="text-sm text-muted-foreground">Portfolio Value</p>
                       <p className="text-3xl font-bold text-primary">
                         ${totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Current market value
                       </p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-primary" />
@@ -287,8 +336,11 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Gold Weight</p>
-                      <p className="text-3xl font-bold">{totalWeight.toFixed(2)} oz</p>
+                      <p className="text-sm text-muted-foreground">Gold Holdings</p>
+                      <p className="text-3xl font-bold">{totalWeight.toFixed(3)} oz</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Physical gold stored
+                      </p>
                     </div>
                     <Coins className="h-8 w-8 text-primary" />
                   </div>
@@ -299,10 +351,95 @@ export default function Dashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Active Consignments</p>
+                      <p className="text-sm text-muted-foreground">Active Items</p>
                       <p className="text-3xl font-bold">{consignments.length}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Stored consignments
+                      </p>
                     </div>
                     <Shield className="h-8 w-8 text-primary" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="stat-average-purity">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Avg. Purity</p>
+                      <p className="text-3xl font-bold">
+                        {consignments.length > 0 
+                          ? (consignments.reduce((sum: number, c: any) => sum + parseFloat(c.purity || 0), 0) / consignments.length).toFixed(1)
+                          : '0'}%
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Gold quality
+                      </p>
+                    </div>
+                    <Award className="h-8 w-8 text-primary" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Real-time Portfolio Performance */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card data-testid="performance-metrics">
+                <CardHeader>
+                  <CardTitle>Portfolio Performance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <span className="text-sm font-medium">Current Market Value</span>
+                      <span className="font-bold text-primary">${(totalWeight * currentGoldPrice).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <span className="text-sm font-medium">Original Investment</span>
+                      <span className="font-bold">${totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <span className="text-sm font-medium">Unrealized P&L</span>
+                      <span className={`font-bold ${(totalWeight * currentGoldPrice) - totalValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ${Math.abs((totalWeight * currentGoldPrice) - totalValue).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                        {(totalWeight * currentGoldPrice) - totalValue >= 0 ? ' ↗' : ' ↘'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                      <span className="text-sm font-medium">Return (%)</span>
+                      <span className={`font-bold ${(totalWeight * currentGoldPrice) - totalValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {totalValue > 0 ? (((totalWeight * currentGoldPrice) - totalValue) / totalValue * 100).toFixed(2) : '0.00'}%
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="storage-breakdown">
+                <CardHeader>
+                  <CardTitle>Storage Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {consignments.length > 0 ? (
+                      consignments.map((consignment: any, index: number) => (
+                        <div key={consignment.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                          <div>
+                            <span className="text-sm font-medium">#{consignment.consignmentNumber}</span>
+                            <p className="text-xs text-muted-foreground">{consignment.purity}% purity</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold">{consignment.weight} oz</span>
+                            <p className="text-xs text-muted-foreground">${(parseFloat(consignment.weight) * currentGoldPrice).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <Coins className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">No gold holdings yet</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
