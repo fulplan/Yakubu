@@ -43,68 +43,71 @@ export default function Home() {
   const currentGoldPrice = goldPrices?.usd || 2034.50;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation 
-        goldPrice={currentGoldPrice}
-        onLogin={() => window.location.href = "/api/login"}
-        onRegister={() => window.location.href = "/api/login"}
-        user={user}
-      />
+    <div className="min-h-screen bg-background pb-24 md:pb-0">
+      {/* Desktop Navigation */}
+      <div className="hidden md:block">
+        <Navigation 
+          goldPrice={currentGoldPrice}
+          onLogin={() => window.location.href = "/api/login"}
+          onRegister={() => window.location.href = "/api/login"}
+          user={user}
+        />
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="home-dashboard">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-3 md:py-8" data-testid="home-dashboard">
         {/* Welcome Header */}
-        <div className="mb-8">
-          <div className="bg-primary text-primary-foreground rounded-2xl p-8 shadow-lg">
-            <div className="flex items-center justify-between">
+        <div className="mb-4 md:mb-8">
+          <div className="bg-primary text-primary-foreground rounded-2xl p-4 md:p-8 shadow-lg">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
               <div>
-                <h1 className="text-3xl font-bold mb-2" data-testid="welcome-message">
+                <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2" data-testid="welcome-message">
                   Welcome back, {user?.firstName || 'Valued Client'}
                 </h1>
-                <p className="text-primary-foreground/80">Portfolio Overview</p>
+                <p className="text-primary-foreground/80 text-sm md:text-base">Portfolio Overview</p>
               </div>
-              <div className="text-right">
-                <div className="text-4xl font-bold" data-testid="total-value">
+              <div className="text-left md:text-right">
+                <div className="text-2xl md:text-4xl font-bold" data-testid="total-value">
                   ${totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                 </div>
-                <div className="text-sm text-primary-foreground/80">Total Portfolio Value</div>
+                <div className="text-xs md:text-sm text-primary-foreground/80">Total Portfolio Value</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Portfolio Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" data-testid="portfolio-stats">
-          <Card className="p-6">
-            <div className="flex items-center mb-4">
-              <Coins className="h-8 w-8 text-primary mr-3" />
-              <h3 className="font-semibold">Gold Holdings</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mb-4 md:mb-8" data-testid="portfolio-stats">
+          <Card className="p-4 md:p-6">
+            <div className="flex items-center mb-3 md:mb-4">
+              <Coins className="h-6 w-6 md:h-8 md:w-8 text-primary mr-2 md:mr-3" />
+              <h3 className="font-semibold text-sm md:text-base">Gold Holdings</h3>
             </div>
-            <div className="text-3xl font-bold mb-2" data-testid="total-weight">
+            <div className="text-2xl md:text-3xl font-bold mb-1 md:mb-2" data-testid="total-weight">
               {totalWeight.toFixed(1)} oz
             </div>
-            <div className="text-sm text-muted-foreground">Current Weight</div>
+            <div className="text-xs md:text-sm text-muted-foreground">Current Weight</div>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center mb-4">
-              <TrendingUp className="h-8 w-8 text-primary mr-3" />
-              <h3 className="font-semibold">Performance</h3>
+          <Card className="p-4 md:p-6">
+            <div className="flex items-center mb-3 md:mb-4">
+              <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-primary mr-2 md:mr-3" />
+              <h3 className="font-semibold text-sm md:text-base">Performance</h3>
             </div>
-            <div className="text-3xl font-bold mb-2 text-green-600" data-testid="performance">
+            <div className="text-2xl md:text-3xl font-bold mb-1 md:mb-2 text-green-600" data-testid="performance">
               +{((currentGoldPrice - 1950) / 1950 * 100).toFixed(1)}%
             </div>
-            <div className="text-sm text-muted-foreground">This Year</div>
+            <div className="text-xs md:text-sm text-muted-foreground">This Year</div>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center mb-4">
-              <Calendar className="h-8 w-8 text-primary mr-3" />
-              <h3 className="font-semibold">Active Storage</h3>
+          <Card className="p-4 md:p-6">
+            <div className="flex items-center mb-3 md:mb-4">
+              <Calendar className="h-6 w-6 md:h-8 md:w-8 text-primary mr-2 md:mr-3" />
+              <h3 className="font-semibold text-sm md:text-base">Active Storage</h3>
             </div>
-            <div className="text-3xl font-bold mb-2" data-testid="active-consignments">
+            <div className="text-2xl md:text-3xl font-bold mb-1 md:mb-2" data-testid="active-consignments">
               {consignments.length}
             </div>
-            <div className="text-sm text-muted-foreground">Consignments</div>
+            <div className="text-xs md:text-sm text-muted-foreground">Consignments</div>
           </Card>
         </div>
 
@@ -112,7 +115,7 @@ export default function Home() {
         <LivePrices />
 
         {/* Recent Activity & Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 mb-4 md:mb-8">
           {/* Recent Activity */}
           <div className="lg:col-span-2">
             <Card className="p-6" data-testid="recent-activity">
@@ -210,7 +213,10 @@ export default function Home() {
       </div>
 
       <ChatSupport />
-      <Footer />
+      {/* Desktop Footer */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
     </div>
   );
 }

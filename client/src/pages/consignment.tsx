@@ -111,36 +111,49 @@ export default function Consignment() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation 
-        goldPrice={2034.50}
-        onLogin={() => window.location.href = "/api/login"}
-        onRegister={() => window.location.href = "/api/login"}
-        user={user}
-      />
+    <div className="min-h-screen bg-background pb-24 md:pb-0">
+      {/* Desktop Navigation */}
+      <div className="hidden md:block">
+        <Navigation 
+          goldPrice={2034.50}
+          onLogin={() => window.location.href = "/api/login"}
+          onRegister={() => window.location.href = "/api/login"}
+          user={user}
+        />
+      </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="consignment-page">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-3 md:py-8" data-testid="consignment-page">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4 md:mb-8">
           <Button 
             variant="ghost" 
-            onClick={() => setLocation("/")}
-            className="mb-4"
+            onClick={() => setLocation("/dashboard")}
+            className="mb-2 md:mb-4 hidden md:flex"
             data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
-          <h1 className="text-4xl font-serif font-bold mb-4">Create Gold Consignment</h1>
-          <p className="text-xl text-muted-foreground">
-            Securely consign your gold assets with our professional storage service
-          </p>
+          {/* Mobile header - compact */}
+          <div className="md:hidden mb-4 pt-2">
+            <h1 className="text-2xl font-serif font-bold mb-2">New Consignment</h1>
+            <p className="text-sm text-muted-foreground">
+              Create a secure gold consignment
+            </p>
+          </div>
+          {/* Desktop header - full */}
+          <div className="hidden md:block">
+            <h1 className="text-4xl font-serif font-bold mb-4">Create Gold Consignment</h1>
+            <p className="text-xl text-muted-foreground">
+              Securely consign your gold assets with our professional storage service
+            </p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} data-testid="consignment-form">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
             {/* Main Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 md:space-y-6">
               {/* Gold Details */}
               <Card data-testid="card-gold-details">
                 <CardHeader>
@@ -296,7 +309,7 @@ export default function Consignment() {
             </div>
 
             {/* Summary Sidebar */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {/* Cost Summary */}
               <Card data-testid="card-cost-summary">
                 <CardHeader>
@@ -395,7 +408,10 @@ export default function Consignment() {
         </form>
       </div>
 
-      <Footer />
+      {/* Desktop Footer */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -60,24 +60,27 @@ export default function Tracking({ params }: TrackingPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation 
-        goldPrice={2034.50}
-        onLogin={() => window.location.href = "/api/login"}
-        onRegister={() => window.location.href = "/api/login"}
-      />
+    <div className="min-h-screen bg-background pb-24 md:pb-0">
+      {/* Desktop Navigation */}
+      <div className="hidden md:block">
+        <Navigation 
+          goldPrice={2034.50}
+          onLogin={() => window.location.href = "/api/login"}
+          onRegister={() => window.location.href = "/api/login"}
+        />
+      </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="tracking-page">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-3 md:py-8" data-testid="tracking-page">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-6">Track Your Consignment</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+        <div className="text-center mb-6 md:mb-12">
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-serif font-bold mb-3 md:mb-6">Track Your Consignment</h1>
+          <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto px-2">
             Enter your consignment ID or scan the QR code to view real-time status and audit trail
           </p>
         </div>
 
         {/* Search Box */}
-        <Card className="mb-8" data-testid="tracking-search">
+        <Card className="mb-4 md:mb-8" data-testid="tracking-search">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <Input
@@ -242,7 +245,10 @@ export default function Tracking({ params }: TrackingPageProps) {
         )}
       </div>
 
-      <Footer />
+      {/* Desktop Footer */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
     </div>
   );
 }
