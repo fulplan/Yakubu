@@ -711,6 +711,21 @@ export default function Admin() {
 
   const [selectedClaim, setSelectedClaim] = useState<any>(null);
   const [claimNotes, setClaimNotes] = useState("");
+  const [selectedConsignment, setSelectedConsignment] = useState<any>(null);
+  const [verificationDialogOpen, setVerificationDialogOpen] = useState(false);
+  const [verifiedWeight, setVerifiedWeight] = useState("");
+  const [verifiedPurity, setVerifiedPurity] = useState("");
+  const [verificationNotes, setVerificationNotes] = useState("");
+  const [addToAccount, setAddToAccount] = useState(true);
+  const [statusUpdateDialogOpen, setStatusUpdateDialogOpen] = useState(false);
+  const [newStatus, setNewStatus] = useState("");
+  const [statusNotes, setStatusNotes] = useState("");
+  const [selectedClaimForDetails, setSelectedClaimForDetails] = useState<any>(null);
+  const [claimDetailsDialogOpen, setClaimDetailsDialogOpen] = useState(false);
+  const [communicationMessage, setCommunicationMessage] = useState("");
+  const [assignedAdmin, setAssignedAdmin] = useState("");
+  const [claimPriority, setClaimPriority] = useState("");
+  const [claimFilter, setClaimFilter] = useState("all"); // all, pending, assigned, high_priority
 
   // Auth protection
   useEffect(() => {
@@ -733,13 +748,145 @@ export default function Admin() {
     enabled: !!user,
   });
 
-  const { data: consignments = [] } = useQuery({
-    queryKey: ["/api/consignments"],
+  const { data: allClaims = [], isLoading: allClaimsLoading } = useQuery({
+    queryKey: ["/api/admin/claims"],
+    enabled: !!user,
+  });
+
+  const { data: consignments = [], isLoading: consignmentsLoading } = useQuery({
+    queryKey: ["/api/admin/consignments"],
     enabled: !!user,
   });
 
   const { data: goldPrices } = useQuery({
     queryKey: ["/api/gold-prices"],
+  });
+
+  // Enhanced claims mutations
+  const assignClaimMutation = useMutation({
+    mutationFn: async ({ id, adminId }: { id: string; adminId?: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/claims/${id}/assign`, { adminId });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Claim Assigned",
+        description: "Claim has been assigned successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/claims"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Assign Claim",
+        description: error.message || "An error occurred while assigning the claim.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addCommunicationMutation = useMutation({
+    mutationFn: async ({ id, message }: { id: string; message: string }) => {
+      const response = await apiRequest("POST", `/api/admin/claims/${id}/communication`, { message });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Communication Added",
+        description: "Communication has been added to the claim.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/claims"] });
+      setCommunicationMessage("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Add Communication",
+        description: error.message || "An error occurred while adding communication.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePriorityMutation = useMutation({
+    mutationFn: async ({ id, priority }: { id: string; priority: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/claims/${id}/priority`, { priority });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Priority Updated",
+        description: "Claim priority has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/claims"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Update Priority",
+        description: error.message || "An error occurred while updating priority.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Consignment mutations
+  const updateConsignmentStatusMutation = useMutation({
+    mutationFn: async ({ id, status, adminNotes }: { id: string; status: string; adminNotes?: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/consignments/${id}/status`, { status, adminNotes });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Consignment Updated",
+        description: "Consignment status has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/consignments"] });
+      setStatusUpdateDialogOpen(false);
+      setNewStatus("");
+      setStatusNotes("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Update Consignment",
+        description: error.message || "An error occurred while updating the consignment.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyConsignmentMutation = useMutation({
+    mutationFn: async ({ id, verifiedWeight, verifiedPurity, adminNotes, addToAccount }: { 
+      id: string; 
+      verifiedWeight: number; 
+      verifiedPurity: number; 
+      adminNotes: string; 
+      addToAccount: boolean 
+    }) => {
+      const response = await apiRequest("POST", `/api/admin/consignments/${id}/verify`, { 
+        verifiedWeight, 
+        verifiedPurity, 
+        adminNotes, 
+        addToAccount 
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Consignment Verified",
+        description: "Consignment has been verified successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/consignments"] });
+      setVerificationDialogOpen(false);
+      setVerifiedWeight("");
+      setVerifiedPurity("");
+      setVerificationNotes("");
+      setSelectedConsignment(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Verify Consignment",
+        description: error.message || "An error occurred while verifying the consignment.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Mutations
@@ -1024,30 +1171,119 @@ export default function Admin() {
           <TabsContent value="consignments" className="space-y-6" data-testid="consignments-content">
             <Card>
               <CardHeader>
-                <CardTitle>All Consignments</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  All Consignments ({consignments.length})
+                  <Badge variant="outline">
+                    {consignments.filter((c: any) => c.status === 'pending').length} Pending Review
+                  </Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {consignments.length > 0 ? (
+                {consignmentsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-muted-foreground">Loading consignments...</p>
+                  </div>
+                ) : consignments.length > 0 ? (
                   <div className="space-y-4">
                     {consignments.map((consignment: any) => (
                       <Card key={consignment.id} className="p-4" data-testid={`admin-consignment-${consignment.id}`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold">#{consignment.consignmentNumber}</h4>
-                            <p className="text-sm text-muted-foreground">{consignment.description}</p>
-                            <div className="flex items-center gap-4 mt-2 text-sm">
-                              <span>Weight: {consignment.weight} oz</span>
-                              <span>Value: ${parseFloat(consignment.estimatedValue).toLocaleString()}</span>
-                              <span>Plan: {consignment.storagePlan}</span>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-2">
+                              <h4 className="font-semibold text-lg">#{consignment.consignmentNumber}</h4>
+                              <Badge variant={
+                                consignment.status === 'verified' ? 'default' : 
+                                consignment.status === 'pending' ? 'secondary' : 
+                                consignment.status === 'stored' ? 'outline' :
+                                'destructive'
+                              }>
+                                {consignment.status}
+                              </Badge>
+                              {consignment.status === 'pending' && (
+                                <Badge variant="destructive" className="animate-pulse">
+                                  Needs Review
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-3">{consignment.description}</p>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium">Customer:</span>
+                                <p className="text-muted-foreground">{consignment.userName || consignment.userEmail}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Weight:</span>
+                                <p className="text-muted-foreground">{consignment.weight} oz</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Purity:</span>
+                                <p className="text-muted-foreground">{consignment.purity}%</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Est. Value:</span>
+                                <p className="text-muted-foreground">${parseFloat(consignment.estimatedValue).toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Storage Plan:</span>
+                                <p className="text-muted-foreground capitalize">{consignment.storagePlan}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Created:</span>
+                                <p className="text-muted-foreground">{new Date(consignment.createdAt).toLocaleDateString()}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Insurance:</span>
+                                <p className="text-muted-foreground">{consignment.insuranceEnabled ? 'Yes' : 'No'}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Vault:</span>
+                                <p className="text-muted-foreground">{consignment.vaultLocation || 'Not assigned'}</p>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <Badge variant={consignment.status === 'stored' ? 'default' : 'secondary'} className="mb-2">
-                              {consignment.status}
-                            </Badge>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(consignment.createdAt).toLocaleDateString()}
-                            </div>
+                          
+                          <div className="flex flex-col gap-2 ml-4">
+                            {consignment.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedConsignment(consignment);
+                                  setVerifiedWeight(consignment.weight);
+                                  setVerifiedPurity(consignment.purity);
+                                  setVerificationDialogOpen(true);
+                                }}
+                                data-testid={`button-verify-${consignment.id}`}
+                              >
+                                <UserCheck className="h-4 w-4 mr-1" />
+                                Verify
+                              </Button>
+                            )}
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedConsignment(consignment);
+                                setNewStatus(consignment.status);
+                                setStatusUpdateDialogOpen(true);
+                              }}
+                              data-testid={`button-update-status-${consignment.id}`}
+                            >
+                              <Settings className="h-4 w-4 mr-1" />
+                              Update Status
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`/tracking/${consignment.consignmentNumber}`, '_blank')}
+                              data-testid={`button-view-tracking-${consignment.id}`}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Tracking
+                            </Button>
                           </div>
                         </div>
                       </Card>
@@ -1258,7 +1494,241 @@ export default function Admin() {
           </TabsContent>
         </Tabs>
 
-        {/* Claim Modal/Dialog would go here in a real implementation */}
+        {/* Consignment Verification Dialog */}
+        <Dialog open={verificationDialogOpen} onOpenChange={setVerificationDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Verify Consignment {selectedConsignment?.consignmentNumber}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 pt-4">
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Original Details</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Customer:</span>
+                    <p>{selectedConsignment?.userName || selectedConsignment?.userEmail}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Description:</span>
+                    <p>{selectedConsignment?.description}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Reported Weight:</span>
+                    <p>{selectedConsignment?.weight} oz</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Reported Purity:</span>
+                    <p>{selectedConsignment?.purity}%</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Est. Value:</span>
+                    <p>${parseFloat(selectedConsignment?.estimatedValue || 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Storage Plan:</span>
+                    <p className="capitalize">{selectedConsignment?.storagePlan}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="verifiedWeight">Verified Weight (oz) *</Label>
+                  <Input
+                    id="verifiedWeight"
+                    type="number"
+                    step="0.0001"
+                    placeholder="0.0000"
+                    value={verifiedWeight}
+                    onChange={(e) => setVerifiedWeight(e.target.value)}
+                    data-testid="input-verified-weight"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="verifiedPurity">Verified Purity (%) *</Label>
+                  <Input
+                    id="verifiedPurity"
+                    type="number"
+                    step="0.001"
+                    placeholder="99.9"
+                    value={verifiedPurity}
+                    onChange={(e) => setVerifiedPurity(e.target.value)}
+                    data-testid="input-verified-purity"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="verificationNotes">Verification Notes</Label>
+                <Textarea
+                  id="verificationNotes"
+                  placeholder="Add any notes about the verification process..."
+                  value={verificationNotes}
+                  onChange={(e) => setVerificationNotes(e.target.value)}
+                  rows={3}
+                  data-testid="textarea-verification-notes"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="addToAccount"
+                  checked={addToAccount}
+                  onCheckedChange={setAddToAccount}
+                  data-testid="checkbox-add-to-account"
+                />
+                <Label htmlFor="addToAccount" className="text-sm">
+                  Add verified gold to customer's account
+                </Label>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setVerificationDialogOpen(false)}
+                  data-testid="button-cancel-verification"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    const weight = parseFloat(verifiedWeight);
+                    const purity = parseFloat(verifiedPurity);
+                    
+                    if (!weight || weight <= 0) {
+                      toast({
+                        title: "Invalid Weight",
+                        description: "Please enter a valid weight greater than 0.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    if (!purity || purity <= 0 || purity > 100) {
+                      toast({
+                        title: "Invalid Purity",
+                        description: "Please enter a valid purity between 0 and 100%.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    verifyConsignmentMutation.mutate({
+                      id: selectedConsignment.id,
+                      verifiedWeight: weight,
+                      verifiedPurity: purity,
+                      adminNotes: verificationNotes,
+                      addToAccount,
+                    });
+                  }}
+                  disabled={verifyConsignmentMutation.isPending}
+                  data-testid="button-verify-consignment"
+                >
+                  {verifyConsignmentMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Verify Consignment
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Status Update Dialog */}
+        <Dialog open={statusUpdateDialogOpen} onOpenChange={setStatusUpdateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Consignment Status</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="bg-muted p-3 rounded">
+                <p className="text-sm">
+                  <span className="font-medium">Consignment:</span> {selectedConsignment?.consignmentNumber}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Current Status:</span> {selectedConsignment?.status}
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="newStatus">New Status</Label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger data-testid="select-new-status">
+                    <SelectValue placeholder="Select new status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="stored">Stored</SelectItem>
+                    <SelectItem value="claimed">Claimed</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="statusNotes">Admin Notes</Label>
+                <Textarea
+                  id="statusNotes"
+                  placeholder="Add notes about this status change..."
+                  value={statusNotes}
+                  onChange={(e) => setStatusNotes(e.target.value)}
+                  rows={3}
+                  data-testid="textarea-status-notes"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setStatusUpdateDialogOpen(false)}
+                  data-testid="button-cancel-status-update"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!newStatus) {
+                      toast({
+                        title: "Missing Status",
+                        description: "Please select a new status.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    updateConsignmentStatusMutation.mutate({
+                      id: selectedConsignment.id,
+                      status: newStatus,
+                      adminNotes: statusNotes,
+                    });
+                  }}
+                  disabled={updateConsignmentStatusMutation.isPending}
+                  data-testid="button-update-status"
+                >
+                  {updateConsignmentStatusMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Settings className="h-4 w-4 mr-2" />
+                      Update Status
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Footer />

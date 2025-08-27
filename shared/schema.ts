@@ -88,16 +88,28 @@ export const beneficiaries = pgTable("beneficiaries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Inheritance claims table
+// Enhanced claims table (supports multiple claim types)
 export const inheritanceClaims = pgTable("inheritance_claims", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  willId: varchar("will_id").notNull().references(() => digitalWills.id),
-  beneficiaryId: varchar("beneficiary_id").notNull().references(() => beneficiaries.id),
+  claimType: varchar("claim_type").notNull().default("inheritance"), // inheritance, ownership_dispute, withdrawal_request, transfer_request
+  willId: varchar("will_id").references(() => digitalWills.id), // nullable for non-inheritance claims
+  beneficiaryId: varchar("beneficiary_id").references(() => beneficiaries.id), // nullable for non-inheritance claims
+  consignmentId: varchar("consignment_id").references(() => consignments.id), // for ownership disputes/withdrawals
   claimantName: varchar("claimant_name").notNull(),
   claimantEmail: varchar("claimant_email").notNull(),
-  status: varchar("status").notNull().default("pending"), // pending, under_review, approved, rejected
+  claimantPhone: varchar("claimant_phone"),
+  relationship: varchar("relationship"), // relationship to original owner
+  claimReason: text("claim_reason"), // detailed reason for the claim
+  requestedAction: varchar("requested_action"), // what the claimant wants (transfer, withdrawal, etc.)
+  status: varchar("status").notNull().default("pending"), // pending, under_review, approved, rejected, requires_more_info
+  priority: varchar("priority").notNull().default("normal"), // low, normal, high, urgent
   documentUrls: text("document_urls").array(),
+  documentTypes: text("document_types").array(), // IDs, court_orders, death_certificates, etc.
   adminNotes: text("admin_notes"),
+  communicationLog: jsonb("communication_log"), // track all communications
+  assignedTo: varchar("assigned_to").references(() => users.id), // admin assigned to handle this claim
+  reviewDeadline: timestamp("review_deadline"),
+  resolutionDate: timestamp("resolution_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -221,6 +233,7 @@ export const insertClaimSchema = createInsertSchema(inheritanceClaims).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  resolutionDate: true,
 });
 
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({

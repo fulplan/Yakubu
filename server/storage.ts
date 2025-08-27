@@ -46,7 +46,9 @@ export interface IStorage {
   getConsignment(id: string): Promise<Consignment | undefined>;
   getConsignmentByNumber(number: string): Promise<Consignment | undefined>;
   getUserConsignments(userId: string): Promise<Consignment[]>;
+  getAllConsignments(): Promise<(Consignment & { userEmail: string; userName: string })[]>;
   updateConsignmentStatus(id: string, status: string): Promise<void>;
+  verifyConsignment(id: string, verifiedWeight: number, verifiedPurity: number, adminNotes: string, adminId: string): Promise<void>;
   
   // Consignment events
   addConsignmentEvent(event: Omit<ConsignmentEvent, 'id' | 'timestamp'>): Promise<void>;
@@ -62,11 +64,15 @@ export interface IStorage {
   getWillBeneficiaries(willId: string): Promise<Beneficiary[]>;
   deleteBeneficiary(id: string): Promise<void>;
   
-  // Inheritance claims
+  // Enhanced claims
   createClaim(claim: InsertClaim): Promise<InheritanceClaim>;
   getClaim(id: string): Promise<InheritanceClaim | undefined>;
   getPendingClaims(): Promise<InheritanceClaim[]>;
+  getAllClaims(): Promise<InheritanceClaim[]>;
   updateClaimStatus(id: string, status: string, adminNotes?: string): Promise<void>;
+  assignClaimToAdmin(claimId: string, adminId: string): Promise<void>;
+  addClaimCommunication(claimId: string, message: string, fromAdmin: boolean, adminId?: string): Promise<void>;
+  updateClaimPriority(claimId: string, priority: string): Promise<void>;
   
   // Chat operations
   saveChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
@@ -81,6 +87,13 @@ export interface IStorage {
   createGoldHolding(holding: InsertGoldHolding): Promise<GoldHolding>;
   getUserGoldHoldings(userId: string): Promise<GoldHolding[]>;
   getUserGoldBalance(userId: string): Promise<{totalWeight: number; totalValue: number; avgPurity: number; activeItems: number}>;
+  
+  // Enhanced user management operations
+  updateUserRole(userId: string, role: string): Promise<void>;
+  deactivateUser(userId: string): Promise<void>;
+  reactivateUser(userId: string): Promise<void>;
+  resetUserPassword(userId: string, newPassword: string): Promise<void>;
+  getUserActivityLog(userId: string): Promise<any[]>;
   
   // Storage plans
   getStoragePlans(): Promise<StoragePlan[]>;
@@ -194,6 +207,65 @@ export class DatabaseStorage implements IStorage {
       .where(eq(consignments.id, id));
   }
 
+  async getAllConsignments(): Promise<(Consignment & { userEmail: string; userName: string })[]> {
+    const result = await db
+      .select({
+        id: consignments.id,
+        userId: consignments.userId,
+        consignmentNumber: consignments.consignmentNumber,
+        description: consignments.description,
+        weight: consignments.weight,
+        purity: consignments.purity,
+        estimatedValue: consignments.estimatedValue,
+        status: consignments.status,
+        storagePlan: consignments.storagePlan,
+        insuranceEnabled: consignments.insuranceEnabled,
+        vaultLocation: consignments.vaultLocation,
+        certificateUrl: consignments.certificateUrl,
+        qrCode: consignments.qrCode,
+        createdAt: consignments.createdAt,
+        updatedAt: consignments.updatedAt,
+        userEmail: users.email,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+      })
+      .from(consignments)
+      .leftJoin(users, eq(consignments.userId, users.id))
+      .orderBy(desc(consignments.createdAt));
+
+    return result.map(row => ({
+      ...row,
+      userName: `${row.userFirstName || ''} ${row.userLastName || ''}`.trim() || row.userEmail?.split('@')[0] || 'Unknown'
+    })) as (Consignment & { userEmail: string; userName: string })[];
+  }
+
+  async verifyConsignment(id: string, verifiedWeight: number, verifiedPurity: number, adminNotes: string, adminId: string): Promise<void> {
+    // Update consignment status to verified
+    await db
+      .update(consignments)
+      .set({ 
+        status: 'verified',
+        weight: verifiedWeight.toString(),
+        purity: verifiedPurity.toString(),
+        updatedAt: new Date() 
+      })
+      .where(eq(consignments.id, id));
+    
+    // Add verification event
+    await this.addConsignmentEvent({
+      consignmentId: id,
+      eventType: 'verified',
+      description: `Consignment verified by admin. Weight: ${verifiedWeight}oz, Purity: ${verifiedPurity}%`,
+      actor: adminId,
+      metadata: { 
+        verifiedWeight, 
+        verifiedPurity, 
+        adminNotes,
+        originalVerification: true 
+      },
+    });
+  }
+
   private async generateConsignmentNumber(): Promise<string> {
     const year = new Date().getFullYear();
     const timestamp = Date.now().toString().slice(-6);
@@ -292,6 +364,55 @@ export class DatabaseStorage implements IStorage {
       .update(inheritanceClaims)
       .set(updateData)
       .where(eq(inheritanceClaims.id, id));
+  }
+
+  async getAllClaims(): Promise<InheritanceClaim[]> {
+    return db
+      .select()
+      .from(inheritanceClaims)
+      .orderBy(desc(inheritanceClaims.createdAt));
+  }
+
+  async assignClaimToAdmin(claimId: string, adminId: string): Promise<void> {
+    await db
+      .update(inheritanceClaims)
+      .set({ assignedTo: adminId, updatedAt: new Date() })
+      .where(eq(inheritanceClaims.id, claimId));
+  }
+
+  async addClaimCommunication(claimId: string, message: string, fromAdmin: boolean, adminId?: string): Promise<void> {
+    // Get current communication log
+    const [claim] = await db
+      .select({ communicationLog: inheritanceClaims.communicationLog })
+      .from(inheritanceClaims)
+      .where(eq(inheritanceClaims.id, claimId));
+
+    const currentLog = claim?.communicationLog as any[] || [];
+    
+    const newCommunication = {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      message,
+      fromAdmin,
+      adminId: fromAdmin ? adminId : null,
+    };
+
+    const updatedLog = [...currentLog, newCommunication];
+
+    await db
+      .update(inheritanceClaims)
+      .set({ 
+        communicationLog: updatedLog,
+        updatedAt: new Date() 
+      })
+      .where(eq(inheritanceClaims.id, claimId));
+  }
+
+  async updateClaimPriority(claimId: string, priority: string): Promise<void> {
+    await db
+      .update(inheritanceClaims)
+      .set({ priority, updatedAt: new Date() })
+      .where(eq(inheritanceClaims.id, claimId));
   }
 
   // Chat operations
@@ -406,6 +527,88 @@ export class DatabaseStorage implements IStorage {
       avgPurity: Math.max(0, avgPurity),
       activeItems: Math.max(0, activeItems)
     };
+  }
+
+  // Enhanced user management operations
+  async updateUserRole(userId: string, role: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async deactivateUser(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async reactivateUser(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ isActive: true, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async resetUserPassword(userId: string, newPassword: string): Promise<void> {
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    await db
+      .update(users)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserActivityLog(userId: string): Promise<any[]> {
+    // Combine activity from multiple sources
+    const transactions = await db
+      .select({
+        type: sql`'transaction'`.as('type'),
+        action: accountTransactions.type,
+        description: accountTransactions.description,
+        amount: accountTransactions.amount,
+        timestamp: accountTransactions.createdAt,
+      })
+      .from(accountTransactions)
+      .where(eq(accountTransactions.userId, userId))
+      .orderBy(desc(accountTransactions.createdAt))
+      .limit(50);
+
+    const goldTransactions = await db
+      .select({
+        type: sql`'gold_transaction'`.as('type'),
+        action: goldHoldings.type,
+        description: goldHoldings.description,
+        weight: goldHoldings.weight,
+        purity: goldHoldings.purity,
+        timestamp: goldHoldings.createdAt,
+      })
+      .from(goldHoldings)
+      .where(eq(goldHoldings.userId, userId))
+      .orderBy(desc(goldHoldings.createdAt))
+      .limit(50);
+
+    const consignmentActivity = await db
+      .select({
+        type: sql`'consignment'`.as('type'),
+        action: consignments.status,
+        description: consignments.description,
+        consignmentNumber: consignments.consignmentNumber,
+        timestamp: consignments.createdAt,
+      })
+      .from(consignments)
+      .where(eq(consignments.userId, userId))
+      .orderBy(desc(consignments.createdAt))
+      .limit(50);
+
+    // Combine and sort all activities
+    const allActivities = [...transactions, ...goldTransactions, ...consignmentActivity]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 100);
+
+    return allActivities;
   }
 }
 

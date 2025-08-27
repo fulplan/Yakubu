@@ -213,6 +213,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Consignment Management Routes
+  app.get('/api/admin/consignments', isAdmin, async (req, res) => {
+    try {
+      const consignments = await storage.getAllConsignments();
+      res.json(consignments);
+    } catch (error) {
+      console.error("Error fetching all consignments:", error);
+      res.status(500).json({ message: "Failed to fetch consignments" });
+    }
+  });
+
+  app.patch('/api/admin/consignments/:id/status', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNotes } = req.body;
+      
+      await storage.updateConsignmentStatus(id, status);
+      
+      // Add status change event
+      await storage.addConsignmentEvent({
+        consignmentId: id,
+        eventType: 'status_changed',
+        description: `Status updated to ${status} by admin`,
+        actor: req.user.id,
+        metadata: { newStatus: status, adminNotes },
+      });
+
+      res.json({ message: "Consignment status updated successfully" });
+    } catch (error) {
+      console.error("Error updating consignment status:", error);
+      res.status(500).json({ message: "Failed to update consignment status" });
+    }
+  });
+
+  app.post('/api/admin/consignments/:id/verify', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { verifiedWeight, verifiedPurity, adminNotes, addToAccount } = req.body;
+      
+      await storage.verifyConsignment(id, verifiedWeight, verifiedPurity, adminNotes, req.user.id);
+      
+      // If requested, add gold to customer account
+      if (addToAccount) {
+        const consignment = await storage.getConsignment(id);
+        if (consignment) {
+          await storage.createGoldHolding({
+            userId: consignment.userId,
+            type: 'credit',
+            weight: verifiedWeight.toString(),
+            purity: verifiedPurity.toString(),
+            description: `Gold added from verified consignment ${consignment.consignmentNumber}`,
+            performedBy: req.user.id,
+          });
+        }
+      }
+
+      res.json({ message: "Consignment verified successfully" });
+    } catch (error) {
+      console.error("Error verifying consignment:", error);
+      res.status(500).json({ message: "Failed to verify consignment" });
+    }
+  });
+
+  // Enhanced Admin Claims Management Routes
+  app.get('/api/admin/claims', isAdmin, async (req, res) => {
+    try {
+      const claims = await storage.getAllClaims();
+      res.json(claims);
+    } catch (error) {
+      console.error("Error fetching all claims:", error);
+      res.status(500).json({ message: "Failed to fetch claims" });
+    }
+  });
+
+  app.patch('/api/admin/claims/:id/assign', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { adminId } = req.body;
+      
+      await storage.assignClaimToAdmin(id, adminId || req.user.id);
+      res.json({ message: "Claim assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning claim:", error);
+      res.status(500).json({ message: "Failed to assign claim" });
+    }
+  });
+
+  app.post('/api/admin/claims/:id/communication', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { message } = req.body;
+      
+      await storage.addClaimCommunication(id, message, true, req.user.id);
+      res.json({ message: "Communication added successfully" });
+    } catch (error) {
+      console.error("Error adding communication:", error);
+      res.status(500).json({ message: "Failed to add communication" });
+    }
+  });
+
+  app.patch('/api/admin/claims/:id/priority', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { priority } = req.body;
+      
+      await storage.updateClaimPriority(id, priority);
+      res.json({ message: "Claim priority updated successfully" });
+    } catch (error) {
+      console.error("Error updating claim priority:", error);
+      res.status(500).json({ message: "Failed to update claim priority" });
+    }
+  });
+
   // Admin User Management Routes
   app.get('/api/admin/users', isAdmin, async (req, res) => {
     try {
@@ -426,6 +539,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error debiting gold:", error);
       res.status(500).json({ message: "Failed to debit gold" });
+    }
+  });
+
+  // Enhanced user management features
+  app.patch('/api/admin/users/:id/role', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      
+      await storage.updateUserRole(id, role);
+      res.json({ message: "User role updated successfully" });
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  app.patch('/api/admin/users/:id/deactivate', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      await storage.deactivateUser(id);
+      res.json({ message: "User deactivated successfully" });
+    } catch (error) {
+      console.error("Error deactivating user:", error);
+      res.status(500).json({ message: "Failed to deactivate user" });
+    }
+  });
+
+  app.patch('/api/admin/users/:id/reactivate', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      await storage.reactivateUser(id);
+      res.json({ message: "User reactivated successfully" });
+    } catch (error) {
+      console.error("Error reactivating user:", error);
+      res.status(500).json({ message: "Failed to reactivate user" });
+    }
+  });
+
+  app.post('/api/admin/users/:id/reset-password', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { newPassword } = req.body;
+      
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+      
+      await storage.resetUserPassword(id, newPassword);
+      res.json({ message: "User password reset successfully" });
+    } catch (error) {
+      console.error("Error resetting user password:", error);
+      res.status(500).json({ message: "Failed to reset user password" });
+    }
+  });
+
+  app.get('/api/admin/users/:id/activity', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const activityLog = await storage.getUserActivityLog(id);
+      res.json(activityLog);
+    } catch (error) {
+      console.error("Error fetching user activity:", error);
+      res.status(500).json({ message: "Failed to fetch user activity" });
     }
   });
 
