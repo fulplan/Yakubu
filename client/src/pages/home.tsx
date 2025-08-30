@@ -13,7 +13,7 @@ export default function Home() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  const { data: consignments = [] } = useQuery({
+  const { data: consignments = [], isLoading: consignmentsLoading, error: consignmentsError } = useQuery({
     queryKey: ["/api/consignments"],
     enabled: !!user,
   });
@@ -27,7 +27,7 @@ export default function Home() {
     queryKey: ["/api/gold-prices"],
   });
 
-  if (isLoading) {
+  if (isLoading || consignmentsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -38,9 +38,15 @@ export default function Home() {
     );
   }
 
-  const totalWeight = consignments.reduce((sum: number, c: any) => sum + parseFloat(c.weight || 0), 0);
-  const totalValue = consignments.reduce((sum: number, c: any) => sum + parseFloat(c.estimatedValue || 0), 0);
-  const currentGoldPrice = goldPrices?.usd || 2034.50;
+  // Handle consignment loading error
+  if (consignmentsError && !consignments) {
+    console.error('Error loading consignments:', consignmentsError);
+    // Continue with empty array rather than showing error
+  }
+
+  const totalWeight = Array.isArray(consignments) ? consignments.reduce((sum: number, c: any) => sum + parseFloat(c.weight || 0), 0) : 0;
+  const totalValue = Array.isArray(consignments) ? consignments.reduce((sum: number, c: any) => sum + parseFloat(c.estimatedValue || 0), 0) : 0;
+  const currentGoldPrice = (goldPrices as any)?.usd || 2034.50;
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">
@@ -61,7 +67,7 @@ export default function Home() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
               <div>
                 <h1 className="text-xl md:text-3xl font-bold mb-1 md:mb-2" data-testid="welcome-message">
-                  Welcome back, {user?.firstName || 'Valued Client'}
+                  Welcome back, {(user as any)?.firstName || 'Valued Client'}
                 </h1>
                 <p className="text-primary-foreground/80 text-sm md:text-base">Portfolio Overview</p>
               </div>
@@ -105,7 +111,7 @@ export default function Home() {
               <h3 className="font-semibold text-sm md:text-base">Active Storage</h3>
             </div>
             <div className="text-2xl md:text-3xl font-bold mb-1 md:mb-2" data-testid="active-consignments">
-              {consignments.length}
+              {Array.isArray(consignments) ? consignments.length : 0}
             </div>
             <div className="text-xs md:text-sm text-muted-foreground">Consignments</div>
           </Card>
@@ -121,9 +127,9 @@ export default function Home() {
             <Card className="p-6" data-testid="recent-activity">
               <h3 className="text-xl font-semibold mb-6">Recent Activity</h3>
               
-              {consignments.length > 0 ? (
+              {Array.isArray(consignments) && consignments.length > 0 ? (
                 <div className="space-y-4">
-                  {consignments.slice(0, 3).map((consignment: any, index: number) => (
+                  {Array.isArray(consignments) ? consignments.slice(0, 3).map((consignment: any, index: number) => (
                     <div key={consignment.id} className="flex items-center justify-between p-4 bg-muted rounded-lg" data-testid={`activity-${index}`}>
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center mr-3">
@@ -141,7 +147,7 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )) : null}
                 </div>
               ) : (
                 <div className="text-center py-12">

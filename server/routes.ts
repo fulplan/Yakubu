@@ -49,9 +49,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId,
         trackingId,
-        weight: req.body.weight.toString(),
-        purity: req.body.purity.toString(),
-        estimatedValue: req.body.estimatedValue.toString(),
+        weight: req.body.weight?.toString() || '0',
+        purity: req.body.purity?.toString() || '0',
+        estimatedValue: req.body.estimatedValue?.toString() || '0',
         insuranceEnabled: req.body.insuranceEnabled === 'true' || req.body.insuranceEnabled === true,
       });
 
