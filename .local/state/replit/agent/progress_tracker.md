@@ -5,3 +5,4 @@
 [x] 5. Fix missing Checkbox import in admin page
 [x] 6. Verify the project is working using the feedback tool
 [x] 7. Inform user the import is completed and they can start building, mark the import as completed using the complete_project_import tool
+[x] 8. Fix admin login internal error - resolved database connection and created proper admin user with hashed password
