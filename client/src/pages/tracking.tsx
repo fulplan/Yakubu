@@ -20,7 +20,7 @@ export default function Tracking({ params }: TrackingPageProps) {
     queryKey: ["/api/tracking", searchedId],
     enabled: !!searchedId,
     retry: false,
-  });
+  }) as { data: any, isLoading: boolean, error: any };
 
   const handleSearch = () => {
     if (trackingId.trim()) {
@@ -173,7 +173,7 @@ export default function Tracking({ params }: TrackingPageProps) {
           </Card>
         )}
 
-        {trackingData && (
+        {trackingData && trackingData.consignment && (
           <Card className="mb-8" data-testid="tracking-results">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -205,7 +205,7 @@ export default function Tracking({ params }: TrackingPageProps) {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Audit Trail</h3>
                 <div className="space-y-4" data-testid="audit-trail">
-                  {trackingData.events.map((event: any, index: number) => (
+                  {trackingData.events && trackingData.events.map((event: any, index: number) => (
                     <div key={event.id} className="flex items-start" data-testid={`event-${index}`}>
                       <div className="flex-shrink-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center">
                         {event.eventType === 'created' && <CheckCircle className="h-5 w-5 text-primary-foreground" />}
