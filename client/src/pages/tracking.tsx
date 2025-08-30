@@ -1,20 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRoute } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, QrCode, Download, CheckCircle, Shield, Award, AlertCircle, ArrowLeft, Home, Package, FileText, ExternalLink } from "lucide-react";
+import { Search, QrCode, Download, CheckCircle, Shield, Award, AlertCircle, ArrowLeft, Home, Package, FileText, ExternalLink, Clock, MapPin } from "lucide-react";
 
-interface TrackingPageProps {
-  params?: { consignmentNumber?: string };
-}
-
-export default function Tracking({ params }: TrackingPageProps) {
-  const [trackingId, setTrackingId] = useState(params?.consignmentNumber || "");
-  const [searchedId, setSearchedId] = useState(params?.consignmentNumber || "");
+export default function Tracking() {
+  const [match, params] = useRoute("/tracking/:consignmentNumber?");
+  const [trackingId, setTrackingId] = useState("");
+  const [searchedId, setSearchedId] = useState("");
+  
+  // Set the initial tracking ID from URL params
+  useEffect(() => {
+    if (params?.consignmentNumber) {
+      setTrackingId(params.consignmentNumber);
+      setSearchedId(params.consignmentNumber);
+    }
+  }, [params?.consignmentNumber]);
 
   const { data: trackingData, isLoading, error } = useQuery({
     queryKey: ["/api/tracking", searchedId],
@@ -41,6 +47,10 @@ export default function Tracking({ params }: TrackingPageProps) {
         return 'bg-blue-100 text-blue-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'processing':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -54,8 +64,12 @@ export default function Tracking({ params }: TrackingPageProps) {
         return <Shield className="h-4 w-4" />;
       case 'pending':
         return <AlertCircle className="h-4 w-4" />;
+      case 'rejected':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'processing':
+        return <Package className="h-4 w-4 text-blue-500" />;
       default:
-        return <AlertCircle className="h-4 w-4" />;
+        return <Package className="h-4 w-4" />;
     }
   };
 
@@ -176,25 +190,33 @@ export default function Tracking({ params }: TrackingPageProps) {
         {trackingData && trackingData.consignment && (
           <Card className="mb-8" data-testid="tracking-results">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-2xl font-bold">
                     Consignment #{trackingData.consignment.consignmentNumber}
                   </CardTitle>
                   <p className="text-muted-foreground mt-1">
-                    {trackingData.consignment.description}
+                    {trackingData.consignment.description || 'Gold Storage Consignment'}
                   </p>
+                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                    <span>Weight: {trackingData.consignment.weight} oz</span>
+                    <span>•</span>
+                    <span>Created: {new Date(trackingData.consignment.createdAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <div className="text-right">
+                <div className="text-center md:text-right">
                   <Badge 
-                    className={`${getStatusColor(trackingData.consignment.status)} mb-2`}
+                    className={`${getStatusColor(trackingData.consignment.status)} mb-2 text-lg px-4 py-2`}
                     data-testid="status-badge"
                   >
                     {getStatusIcon(trackingData.consignment.status)}
-                    <span className="ml-1 capitalize">{trackingData.consignment.status}</span>
+                    <span className="ml-2 capitalize font-semibold">{trackingData.consignment.status}</span>
                   </Badge>
-                  <div className="text-sm text-muted-foreground">
-                    Weight: {trackingData.consignment.weight} oz
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Last Updated: {trackingData.events && trackingData.events.length > 0 
+                      ? new Date(trackingData.events[0].timestamp).toLocaleString()
+                      : 'Recently'
+                    }
                   </div>
                 </div>
               </div>
@@ -205,12 +227,16 @@ export default function Tracking({ params }: TrackingPageProps) {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Audit Trail</h3>
                 <div className="space-y-4" data-testid="audit-trail">
-                  {trackingData.events && trackingData.events.map((event: any, index: number) => (
+                  {trackingData.events && trackingData.events.length > 0 ? trackingData.events
+                    .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .map((event: any, index: number) => (
                     <div key={event.id} className="flex items-start" data-testid={`event-${index}`}>
                       <div className="flex-shrink-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                        {event.eventType === 'created' && <CheckCircle className="h-5 w-5 text-primary-foreground" />}
+                        {event.eventType === 'created' && <Package className="h-5 w-5 text-primary-foreground" />}
                         {event.eventType === 'verified' && <Shield className="h-5 w-5 text-primary-foreground" />}
                         {event.eventType === 'stored' && <Award className="h-5 w-5 text-primary-foreground" />}
+                        {event.eventType === 'status_changed' && <AlertCircle className="h-5 w-5 text-primary-foreground" />}
+                        {!['created', 'verified', 'stored', 'status_changed'].includes(event.eventType) && <Clock className="h-5 w-5 text-primary-foreground" />}
                       </div>
                       <div className="ml-4 flex-1">
                         <div className="flex items-center justify-between">
@@ -219,14 +245,30 @@ export default function Tracking({ params }: TrackingPageProps) {
                             {new Date(event.timestamp).toLocaleString()}
                           </span>
                         </div>
-                        {event.metadata && (
-                          <p className="text-muted-foreground text-sm mt-1">
-                            Additional details available in metadata
-                          </p>
+                        {event.metadata && Object.keys(event.metadata).length > 0 && (
+                          <div className="text-muted-foreground text-sm mt-1">
+                            {event.metadata.verifiedWeight && (
+                              <span>Verified Weight: {event.metadata.verifiedWeight}oz </span>
+                            )}
+                            {event.metadata.verifiedPurity && (
+                              <span>Purity: {event.metadata.verifiedPurity}% </span>
+                            )}
+                            {event.metadata.newStatus && (
+                              <span>New Status: {event.metadata.newStatus} </span>
+                            )}
+                            {event.metadata.adminNotes && (
+                              <div className="mt-1">Notes: {event.metadata.adminNotes}</div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-8">
+                      <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground">No tracking events available yet</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
