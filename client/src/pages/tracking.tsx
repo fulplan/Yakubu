@@ -26,6 +26,8 @@ export default function Tracking() {
     queryKey: ["/api/tracking", searchedId],
     enabled: !!searchedId,
     retry: false,
+    refetchInterval: 10000, // Refresh every 10 seconds for real-time updates
+    staleTime: 0, // Always refetch to get latest data
   }) as { data: any, isLoading: boolean, error: any };
 
   const handleSearch = () => {
@@ -202,6 +204,15 @@ export default function Tracking() {
                     <span>Weight: {trackingData.consignment.weight} oz</span>
                     <span>•</span>
                     <span>Created: {new Date(trackingData.consignment.createdAt).toLocaleDateString()}</span>
+                    {trackingData.consignment.currentLocation && (
+                      <>
+                        <span>•</span>
+                        <span className="flex items-center">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {trackingData.consignment.currentLocation}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="text-center md:text-right">
@@ -236,7 +247,8 @@ export default function Tracking() {
                         {event.eventType === 'verified' && <Shield className="h-5 w-5 text-primary-foreground" />}
                         {event.eventType === 'stored' && <Award className="h-5 w-5 text-primary-foreground" />}
                         {event.eventType === 'status_changed' && <AlertCircle className="h-5 w-5 text-primary-foreground" />}
-                        {!['created', 'verified', 'stored', 'status_changed'].includes(event.eventType) && <Clock className="h-5 w-5 text-primary-foreground" />}
+                        {event.eventType === 'tracking_update' && <MapPin className="h-5 w-5 text-primary-foreground" />}
+                        {!['created', 'verified', 'stored', 'status_changed', 'tracking_update'].includes(event.eventType) && <Clock className="h-5 w-5 text-primary-foreground" />}
                       </div>
                       <div className="ml-4 flex-1">
                         <div className="flex items-center justify-between">
@@ -245,6 +257,19 @@ export default function Tracking() {
                             {new Date(event.timestamp).toLocaleString()}
                           </span>
                         </div>
+                        {/* Show location for tracking updates */}
+                        {event.location && (
+                          <div className="flex items-center text-sm text-muted-foreground mt-1">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            <span>{event.location}</span>
+                          </div>
+                        )}
+                        {/* Show status for tracking updates */}
+                        {event.status && event.type === 'update' && (
+                          <Badge className={`${getStatusColor(event.status)} mt-2 text-xs`}>
+                            Status: {event.status.replace('_', ' ')}
+                          </Badge>
+                        )}
                         {event.metadata && Object.keys(event.metadata).length > 0 && (
                           <div className="text-muted-foreground text-sm mt-1">
                             {event.metadata.verifiedWeight && (

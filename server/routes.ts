@@ -112,18 +112,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Consignment not found" });
       }
       
+      // Get both consignment events AND tracking updates
       const events = await storage.getConsignmentEvents(consignment.id);
+      const trackingUpdates = await storage.getTrackingUpdates(consignment.id);
+      
+      // Combine and sort all tracking information chronologically
+      const allTrackingData = [
+        ...events.map(event => ({
+          id: event.id,
+          type: 'event',
+          eventType: event.eventType,
+          description: event.description,
+          timestamp: event.timestamp,
+          metadata: event.metadata
+        })),
+        ...trackingUpdates.filter(update => update.isPublic).map(update => ({
+          id: update.id,
+          type: 'update',
+          eventType: 'tracking_update',
+          description: update.description,
+          status: update.status,
+          location: update.location,
+          timestamp: update.createdAt,
+          metadata: update.metadata
+        }))
+      ].sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
       
       res.json({
         consignment: {
           id: consignment.id,
           consignmentNumber: consignment.consignmentNumber,
           description: consignment.description,
-          status: consignment.status,
+          status: consignment.trackingStatus || consignment.status, // Use tracking status if available
+          currentLocation: consignment.currentLocation,
           weight: consignment.weight,
           createdAt: consignment.createdAt,
         },
-        events,
+        events: allTrackingData,
       });
     } catch (error) {
       console.error("Error fetching tracking info:", error);
