@@ -45,6 +45,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate tracking ID
       const trackingId = crypto.randomUUID();
       
+      // Debug logging to see what's in req.body
+      console.log('Request body:', req.body);
+      console.log('Request files:', req.files);
+      
       const consignmentData = insertConsignmentSchema.parse({
         ...req.body,
         userId,
@@ -53,6 +57,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purity: req.body.purity?.toString() || '0',
         estimatedValue: req.body.estimatedValue?.toString() || '0',
         insuranceEnabled: req.body.insuranceEnabled === 'true' || req.body.insuranceEnabled === true,
+        description: req.body.description || '',
+        storagePlan: req.body.storagePlan || 'standard',
       });
 
       const consignment = await storage.createConsignment(consignmentData);
