@@ -752,6 +752,14 @@ export default function Admin() {
   const [documentNotes, setDocumentNotes] = useState("");
   const [resolutionDialog, setResolutionDialog] = useState(false);
   const [resolutionType, setResolutionType] = useState("");
+  
+  // Tracking update states
+  const [trackingUpdateDialogOpen, setTrackingUpdateDialogOpen] = useState(false);
+  const [selectedConsignmentForTracking, setSelectedConsignmentForTracking] = useState<any>(null);
+  const [trackingStatus, setTrackingStatus] = useState("");
+  const [trackingLocation, setTrackingLocation] = useState("");
+  const [trackingDescription, setTrackingDescription] = useState("");
+  const [notifyCustomer, setNotifyCustomer] = useState(true);
   const [resolutionDetails, setResolutionDetails] = useState("");
   
   // Support System State
@@ -979,6 +987,58 @@ export default function Admin() {
       });
     },
   });
+
+  // Tracking update mutation
+  const updateTrackingMutation = useMutation({
+    mutationFn: async ({ consignmentId, status, location, description, notifyCustomer }: {
+      consignmentId: string;
+      status: string;
+      location: string;
+      description: string;
+      notifyCustomer: boolean;
+    }) => {
+      const response = await apiRequest("POST", `/api/admin/tracking/${consignmentId}/update`, {
+        status,
+        location,
+        description,
+        isPublic: true,
+        notifyCustomer
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Tracking Updated",
+        description: "Consignment tracking has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/consignments"] });
+      setTrackingUpdateDialogOpen(false);
+      setSelectedConsignmentForTracking(null);
+      setTrackingStatus("");
+      setTrackingLocation("");
+      setTrackingDescription("");
+      setNotifyCustomer(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Update Tracking",
+        description: error.message || "An error occurred while updating tracking.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleTrackingUpdate = () => {
+    if (!selectedConsignmentForTracking || !trackingStatus) return;
+    
+    updateTrackingMutation.mutate({
+      consignmentId: selectedConsignmentForTracking.id,
+      status: trackingStatus,
+      location: trackingLocation,
+      description: trackingDescription,
+      notifyCustomer,
+    });
+  };
 
   const handleClaimAction = (status: string) => {
     if (!selectedClaim) return;
@@ -2271,8 +2331,12 @@ export default function Admin() {
                             size="sm" 
                             variant="outline"
                             onClick={() => {
-                              // Open tracking update dialog
-                              console.log('Update tracking for:', consignment.id);
+                              setSelectedConsignmentForTracking(consignment);
+                              setTrackingStatus(consignment.trackingStatus || 'received');
+                              setTrackingLocation(consignment.currentLocation || '');
+                              setTrackingDescription('');
+                              setNotifyCustomer(true);
+                              setTrackingUpdateDialogOpen(true);
                             }}
                           >
                             <MapPin className="h-4 w-4 mr-1" />
@@ -3273,6 +3337,98 @@ export default function Admin() {
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Resolve Ticket
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Tracking Update Dialog */}
+        <Dialog open={trackingUpdateDialogOpen} onOpenChange={setTrackingUpdateDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Update Tracking</DialogTitle>
+              <DialogDescription>
+                Update the tracking status and location for consignment #{selectedConsignmentForTracking?.trackingId || selectedConsignmentForTracking?.consignmentNumber}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="trackingStatus">Tracking Status</Label>
+                <Select value={trackingStatus} onValueChange={setTrackingStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="received">📦 Received</SelectItem>
+                    <SelectItem value="in_vault">🏦 In Vault</SelectItem>
+                    <SelectItem value="under_review">🔍 Under Review</SelectItem>
+                    <SelectItem value="in_transit">🚚 In Transit</SelectItem>
+                    <SelectItem value="delivered">✅ Delivered</SelectItem>
+                    <SelectItem value="rejected">❌ Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="trackingLocation">Current Location</Label>
+                <Input
+                  id="trackingLocation"
+                  value={trackingLocation}
+                  onChange={(e) => setTrackingLocation(e.target.value)}
+                  placeholder="e.g., New York Distribution Center"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="trackingDescription">Update Description</Label>
+                <Textarea
+                  id="trackingDescription"
+                  value={trackingDescription}
+                  onChange={(e) => setTrackingDescription(e.target.value)}
+                  placeholder="Additional details about this tracking update..."
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="notifyCustomer"
+                  checked={notifyCustomer}
+                  onCheckedChange={(checked) => setNotifyCustomer(checked as boolean)}
+                />
+                <Label htmlFor="notifyCustomer" className="text-sm">Send notification to customer</Label>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setTrackingUpdateDialogOpen(false);
+                    setSelectedConsignmentForTracking(null);
+                    setTrackingStatus("");
+                    setTrackingLocation("");
+                    setTrackingDescription("");
+                    setNotifyCustomer(true);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleTrackingUpdate}
+                  disabled={updateTrackingMutation.isPending || !trackingStatus}
+                >
+                  {updateTrackingMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Truck className="h-4 w-4 mr-2" />
+                      Update Tracking
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
