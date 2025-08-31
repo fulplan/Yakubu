@@ -156,6 +156,30 @@
     line-height: 1.6;
     letter-spacing: 0.02em;
   }
+
+  /* Mobile optimizations for tabs and support center */
+  .mobile-optimized {
+    min-height: 44px; /* Minimum touch target size */
+    font-weight: 500;
+  }
+
+  @media (max-width: 480px) {
+    .xs\:hidden {
+      display: none;
+    }
+    .xs\:inline {
+      display: none;
+    }
+  }
+
+  @media (min-width: 481px) {
+    .xs\:hidden {
+      display: inline;
+    }
+    .xs\:inline {
+      display: inline;
+    }
+  }
   
   /* Mobile back navigation */
   .mobile-back-nav {

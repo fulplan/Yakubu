@@ -191,46 +191,46 @@ export default function CustomerSupport() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <p className="text-xl md:text-2xl font-bold">{stats.total}</p>
                   <p className="text-xs text-muted-foreground">Total Tickets</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-orange-500" />
                 <div>
-                  <p className="text-2xl font-bold">{stats.open}</p>
+                  <p className="text-xl md:text-2xl font-bold">{stats.open}</p>
                   <p className="text-xs text-muted-foreground">Open</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-500" />
                 <div>
-                  <p className="text-2xl font-bold">{stats.resolved}</p>
+                  <p className="text-xl md:text-2xl font-bold">{stats.resolved}</p>
                   <p className="text-xs text-muted-foreground">Resolved</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 <div>
-                  <p className="text-2xl font-bold">{stats.urgent}</p>
+                  <p className="text-xl md:text-2xl font-bold">{stats.urgent}</p>
                   <p className="text-xs text-muted-foreground">Urgent</p>
                 </div>
               </div>
@@ -240,14 +240,17 @@ export default function CustomerSupport() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="tickets" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-0 h-auto sm:h-10 p-2 sm:p-1 mb-6 md:mb-8">
+            <TabsTrigger value="tickets" className="flex items-center justify-center gap-2 py-3 sm:py-1.5 text-sm sm:text-base mobile-optimized">
               <MessageSquare className="h-4 w-4" />
-              My Tickets ({stats.total})
+              <span className="hidden xs:inline">My Tickets</span>
+              <span className="xs:hidden">Tickets</span>
+              <span className="ml-1">({stats.total})</span>
             </TabsTrigger>
-            <TabsTrigger value="create" className="flex items-center gap-2">
+            <TabsTrigger value="create" className="flex items-center justify-center gap-2 py-3 sm:py-1.5 text-sm sm:text-base mobile-optimized">
               <Plus className="h-4 w-4" />
-              Create New Ticket
+              <span className="hidden xs:inline">Create New Ticket</span>
+              <span className="xs:hidden">Create</span>
             </TabsTrigger>
           </TabsList>
 
@@ -255,44 +258,46 @@ export default function CustomerSupport() {
           <TabsContent value="tickets" className="space-y-6">
             {/* Filters */}
             <Card>
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row gap-4">
+              <CardContent className="p-3 md:p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <div className="flex-1">
                     <div className="relative">
-                      <Search className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                      <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                       <Input
                         placeholder="Search tickets..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9"
+                        className="pl-9 mobile-form-input"
                       />
                     </div>
                   </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-32">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                      <SelectItem value="escalated">Escalated</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="w-full sm:w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Priority</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full sm:w-32 mobile-form-input">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                        <SelectItem value="escalated">Escalated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                      <SelectTrigger className="w-full sm:w-32 mobile-form-input">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Priority</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -385,15 +390,15 @@ export default function CustomerSupport() {
               {/* Create Form */}
               <div className="lg:col-span-2">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Create New Support Ticket</CardTitle>
+                  <CardHeader className="p-4 md:p-6">
+                    <CardTitle className="text-lg md:text-xl">Create New Support Ticket</CardTitle>
                     <p className="text-sm text-muted-foreground">
                       Describe your issue in detail and our support team will help you
                     </p>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 md:p-6">
                     <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
                         <div className="grid sm:grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -403,7 +408,7 @@ export default function CustomerSupport() {
                                 <FormLabel>Category</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="mobile-form-input">
                                       <SelectValue placeholder="Select category" />
                                     </SelectTrigger>
                                   </FormControl>
@@ -431,7 +436,7 @@ export default function CustomerSupport() {
                                 <FormLabel>Priority</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="mobile-form-input">
                                       <SelectValue />
                                     </SelectTrigger>
                                   </FormControl>
@@ -457,6 +462,7 @@ export default function CustomerSupport() {
                               <FormControl>
                                 <Input 
                                   placeholder="Brief description of your issue" 
+                                  className="mobile-form-input"
                                   {...field} 
                                 />
                               </FormControl>
@@ -474,7 +480,7 @@ export default function CustomerSupport() {
                               <FormControl>
                                 <Textarea 
                                   placeholder="Please provide detailed information about your issue or question. Include any relevant details like error messages, account information, or steps you've already tried..."
-                                  className="min-h-[120px]"
+                                  className="min-h-[120px] mobile-form-input"
                                   {...field} 
                                 />
                               </FormControl>
@@ -487,7 +493,7 @@ export default function CustomerSupport() {
                           type="submit" 
                           size="lg" 
                           disabled={createTicketMutation.isPending}
-                          className="w-full"
+                          className="w-full mobile-optimized"
                         >
                           {createTicketMutation.isPending ? (
                             <>
