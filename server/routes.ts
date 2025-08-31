@@ -9,6 +9,8 @@ import { generateQRCode } from "./services/qrCode";
 import { uploadMiddleware } from "./services/fileUpload";
 import multer from "multer";
 import crypto from "crypto";
+import path from "path";
+import fs from "fs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -24,6 +26,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching gold prices:", error);
       res.status(500).json({ message: "Failed to fetch gold prices" });
+    }
+  });
+
+  // Serve certificate files
+  app.get('/uploads/certificates/:filename', async (req, res) => {
+    try {
+      const { filename } = req.params;
+      const filePath = path.join(process.cwd(), 'uploads', 'certificates', filename);
+      
+      if (fs.existsSync(filePath)) {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.sendFile(filePath);
+      } else {
+        res.status(404).json({ message: 'Certificate not found' });
+      }
+    } catch (error) {
+      console.error('Error serving certificate:', error);
+      res.status(500).json({ message: 'Failed to serve certificate' });
     }
   });
 
@@ -266,7 +287,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { status, adminNotes } = req.body;
       
+      // Get the consignment first to check if we need to generate a certificate
+      const consignment = await storage.getConsignment(id);
+      if (!consignment) {
+        return res.status(404).json({ message: "Consignment not found" });
+      }
+      
       await storage.updateConsignmentStatus(id, status);
+      
+      // Generate certificate automatically when status becomes 'stored'
+      if (status === 'stored' && !consignment.certificateUrl) {
+        try {
+          // Generate QR code for tracking
+          const qrCodeUrl = await generateQRCode(consignment.consignmentNumber);
+          
+          // Generate the PDF certificate
+          const certificateUrl = await generateCertificatePDF(consignment, qrCodeUrl);
+          
+          // Update consignment with certificate URL
+          // Update consignment with certificate URL using direct database access
+          const { db } = await import('./db');
+          const { consignments } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          await db.update(consignments).set({ certificateUrl, updatedAt: new Date() }).where(eq(consignments.id, id));
+          
+          console.log(`Certificate generated for consignment ${consignment.consignmentNumber}: ${certificateUrl}`);
+        } catch (certError) {
+          console.error('Failed to generate certificate:', certError);
+          // Don't fail the status update if certificate generation fails
+        }
+      }
       
       // Add status change event
       await storage.addConsignmentEvent({

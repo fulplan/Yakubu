@@ -63,6 +63,7 @@ export interface IStorage {
   getUserConsignments(userId: string): Promise<Consignment[]>;
   getAllConsignments(): Promise<(Consignment & { userEmail: string; userName: string })[]>;
   updateConsignmentStatus(id: string, status: string): Promise<void>;
+  updateConsignmentCertificate(id: string, certificateUrl: string): Promise<void>;
   verifyConsignment(id: string, verifiedWeight: number, verifiedPurity: number, adminNotes: string, adminId: string): Promise<void>;
   
   // Consignment events
