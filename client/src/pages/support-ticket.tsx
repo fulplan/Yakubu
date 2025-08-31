@@ -11,6 +11,7 @@ import { ArrowLeft, MessageSquare, Clock, User, Send, Loader2 } from "lucide-rea
 import { useState, useRef, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import MobileBackNav from "@/components/MobileBackNav";
 import { useLocation } from "wouter";
 
 export default function SupportTicket() {
@@ -204,7 +205,13 @@ export default function SupportTicket() {
         onRegister={() => setLocation("/auth")}
       />
       
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <MobileBackNav 
+        title="Support Ticket" 
+        backPath="/customer-support" 
+        subtitle={`Ticket #${ticket?.id?.slice(0, 8) || ''}`}
+      />
+      
+      <main className="max-w-4xl mx-auto px-4 py-8 mobile-padding">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Button 

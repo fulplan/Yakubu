@@ -146,12 +146,12 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-80" data-testid="mobile-menu">
+              <SheetContent side="right" className="w-80 senior-friendly" data-testid="mobile-menu">
                 <div className="flex flex-col space-y-4 mt-8">
                   {/* Gold Price (Mobile) */}
-                  <div className="flex items-center bg-muted rounded-lg px-3 py-2 mb-4">
+                  <div className="flex items-center bg-muted rounded-lg px-4 py-3 mb-6 mobile-optimized">
                     <span className="text-xl text-primary mr-2">🪙</span>
-                    <span className="text-sm font-medium">
+                    <span className="text-base font-medium">
                       Gold: ${goldPrice.toFixed(2)}/oz
                     </span>
                   </div>
@@ -161,7 +161,7 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
                     <Button
                       key={item.href}
                       variant="ghost"
-                      className="justify-start"
+                      className="justify-start mobile-optimized text-base py-3"
                       onClick={() => {
                         if (item.href.startsWith('/#')) {
                           const element = document.querySelector(item.href.substring(1));

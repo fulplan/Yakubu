@@ -29,7 +29,7 @@ export default function ChatSupport() {
   const { data: user } = useQuery({
     queryKey: ["/api/user"],
     retry: false,
-  });
+  }) as { data: any };
 
   // WebSocket connection
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function ChatSupport() {
           setIsConnected(true);
           
           // Authenticate if user is logged in
-          if (user && wsRef.current) {
+          if (user?.id && wsRef.current) {
             wsRef.current.send(JSON.stringify({
               type: 'authenticate',
               userId: user.id,
@@ -254,7 +254,7 @@ export default function ChatSupport() {
 
       {/* Chat Widget */}
       {isOpen && (
-        <Card className="absolute bottom-16 right-0 w-80 h-96 shadow-2xl border border-border transform transition-all duration-300 ease-out" data-testid="chat-widget">
+        <Card className="absolute bottom-16 right-0 chat-mobile shadow-2xl border border-border transform transition-all duration-300 ease-out mobile-card" data-testid="chat-widget">
           {/* Chat Header */}
           <CardHeader className="bg-primary text-primary-foreground p-4 rounded-t-lg">
             <div className="flex items-center justify-between">
@@ -344,7 +344,7 @@ export default function ChatSupport() {
             </div>
 
             {/* Chat Input */}
-            <div className="p-4 border-t border-border bg-card" data-testid="chat-input">
+            <div className="p-4 border-t border-border bg-card mobile-padding" data-testid="chat-input">
               <div className="flex items-center space-x-2">
                 <Input
                   type="text"
@@ -352,7 +352,7 @@ export default function ChatSupport() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="flex-1 text-sm"
+                  className="flex-1 text-base mobile-form-input"
                   data-testid="chat-message-input"
                   disabled={!isConnected}
                 />

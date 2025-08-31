@@ -142,4 +142,67 @@
   .chart-container {
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(255, 215, 0, 0.1) 100%);
   }
+  
+  /* Mobile optimizations for accessibility */
+  .mobile-optimized {
+    /* Larger touch targets */
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better font scaling for older users */
+  .senior-friendly {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+  }
+  
+  /* Mobile back navigation */
+  .mobile-back-nav {
+    position: sticky;
+    top: 64px; /* Below main navigation */
+    z-index: 40;
+    background: var(--background);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  /* Enhanced mobile spacing */
+  .mobile-padding {
+    padding: 1rem;
+  }
+  
+  .mobile-margin {
+    margin: 0.75rem 0;
+  }
+  
+  /* Better mobile cards */
+  .mobile-card {
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Enhanced mobile forms */
+  .mobile-form-input {
+    min-height: 48px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.75rem;
+  }
+  
+  /* Chat optimizations for mobile */
+  .chat-mobile {
+    bottom: 1rem;
+    right: 1rem;
+    width: calc(100vw - 2rem);
+    max-width: 380px;
+    height: 500px;
+  }
+
+  @media (max-width: 768px) {
+    .chat-mobile {
+      width: calc(100vw - 1rem);
+      right: 0.5rem;
+      bottom: 0.5rem;
+      height: 450px;
+    }
+  }
 }

@@ -2238,7 +2238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const activeConnections = new Map<string, { ws: WebSocket, userId?: string, sessionId?: string, isAdmin: boolean }>();
 
   // WebSocket connection handler
-  wss.on('connection', (ws: WebSocket, request) => {
+  wss.on('connection', (ws: WebSocket, request: any) => {
     console.log('New WebSocket connection established');
     const connectionId = crypto.randomUUID();
     
@@ -2288,17 +2288,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 };
                 
                 if (!conn.isAdmin) {
-                  for (const [id, connection] of activeConnections.entries()) {
+                  Array.from(activeConnections.values()).forEach(connection => {
                     if (connection.isAdmin && connection.ws.readyState === WebSocket.OPEN) {
                       connection.ws.send(JSON.stringify(responseMessage));
                     }
-                  }
+                  });
                 } else {
-                  for (const [id, connection] of activeConnections.entries()) {
+                  Array.from(activeConnections.values()).forEach(connection => {
                     if (!connection.isAdmin && connection.ws.readyState === WebSocket.OPEN) {
                       connection.ws.send(JSON.stringify(responseMessage));
                     }
-                  }
+                  });
                 }
                 
                 ws.send(JSON.stringify(responseMessage));

@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import MobileBackNav from "@/components/MobileBackNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,8 +84,8 @@ export default function CustomerSupport() {
     mutationFn: async (data: SupportTicketData) => {
       const payload = {
         ...data,
-        customerName: `${user?.firstName} ${user?.lastName}`.trim(),
-        customerEmail: user?.email,
+        customerName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Anonymous User',
+        customerEmail: user?.email || 'anonymous@example.com',
         customerId: user?.id
       };
       const response = await apiRequest("POST", "/api/support-tickets", payload);
@@ -161,9 +162,15 @@ export default function CustomerSupport() {
         onRegister={() => setLocation("/auth")}
       />
       
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+      <MobileBackNav 
+        title="Customer Support" 
+        backPath="/dashboard" 
+        subtitle="Manage your support tickets"
+      />
+      
+      <main className="max-w-7xl mx-auto px-4 py-8 mobile-padding">
+        {/* Header - Hidden on mobile since we have MobileBackNav */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
           <Button 
             variant="outline" 
             size="sm" 
