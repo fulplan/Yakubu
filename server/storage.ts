@@ -44,7 +44,8 @@ import {
   type StoragePlan,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, or, isNull } from "drizzle-orm";
+import crypto from "crypto";
 
 export interface IStorage {
   // User operations - Required for Replit Auth
@@ -83,8 +84,12 @@ export interface IStorage {
   // Enhanced claims
   createClaim(claim: InsertClaim): Promise<InheritanceClaim>;
   getClaim(id: string): Promise<InheritanceClaim | undefined>;
+  getClaimById(id: string): Promise<InheritanceClaim | undefined>;
   getPendingClaims(): Promise<InheritanceClaim[]>;
   getAllClaims(): Promise<InheritanceClaim[]>;
+  getUserClaims(userId: string): Promise<InheritanceClaim[]>;
+  getUserOwnershipChangeRequests(userId: string): Promise<InheritanceClaim[]>;
+  canUserAccessClaim(userId: string, claimId: string): Promise<boolean>;
   updateClaimStatus(id: string, status: string, adminNotes?: string): Promise<void>;
   assignClaimToAdmin(claimId: string, adminId: string): Promise<void>;
   addClaimCommunication(claimId: string, message: string, fromAdmin: boolean, adminId?: string): Promise<void>;
@@ -114,7 +119,6 @@ export interface IStorage {
   getAdminNotifications(adminId: string): Promise<AdminNotification[]>;
   getUnreadNotifications(adminId: string): Promise<AdminNotification[]>;
   markNotificationAsRead(notificationId: string): Promise<void>;
-  markAllNotificationsAsRead(adminId: string): Promise<void>;
   deleteNotification(notificationId: string): Promise<void>;
   
   // Account transaction operations
@@ -154,8 +158,12 @@ export interface IStorage {
   // Customer notifications
   createCustomerNotification(notification: InsertCustomerNotification): Promise<CustomerNotification>;
   getCustomerNotifications(userId: string): Promise<CustomerNotification[]>;
+  getUnreadNotificationCount(userId: string): Promise<number>;
+  getNotificationSummary(userId: string): Promise<{total: number; unread: number; urgent: number; byType: Record<string, number>}>;
   markNotificationAsDelivered(notificationId: string): Promise<void>;
   markCustomerNotificationAsRead(notificationId: string): Promise<void>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  respondToNotification(notificationId: string, userId: string, response: string, actionType?: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -262,6 +270,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(consignments)
       .set({ status, updatedAt: new Date() })
+      .where(eq(consignments.id, id));
+  }
+
+  async updateConsignmentCertificate(id: string, certificateUrl: string): Promise<void> {
+    await db
+      .update(consignments)
+      .set({ certificateUrl, updatedAt: new Date() })
       .where(eq(consignments.id, id));
   }
 
@@ -473,6 +488,91 @@ export class DatabaseStorage implements IStorage {
       .where(eq(inheritanceClaims.id, claimId));
   }
 
+  async getClaimById(id: string): Promise<InheritanceClaim | undefined> {
+    return this.getClaim(id); // Alias for getClaim
+  }
+
+  async getUserClaims(userId: string): Promise<InheritanceClaim[]> {
+    // Get claims where user is the claimant (by email) or related to their will/consignment
+    const [userWills] = await db
+      .select({ willId: digitalWills.id })
+      .from(digitalWills)
+      .where(eq(digitalWills.userId, userId));
+    
+    const userConsignments = await db
+      .select({ consignmentId: consignments.id })
+      .from(consignments)
+      .where(eq(consignments.userId, userId));
+
+    const user = await this.getUser(userId);
+    
+    return db
+      .select()
+      .from(inheritanceClaims)
+      .where(
+        sql`${inheritanceClaims.claimantEmail} = ${user?.email} 
+        OR ${inheritanceClaims.willId} = ${userWills?.willId}
+        OR ${inheritanceClaims.consignmentId} IN (${userConsignments.map(c => c.consignmentId).join(',')})`
+      )
+      .orderBy(desc(inheritanceClaims.createdAt));
+  }
+
+  async getUserOwnershipChangeRequests(userId: string): Promise<InheritanceClaim[]> {
+    const user = await this.getUser(userId);
+    
+    return db
+      .select()
+      .from(inheritanceClaims)
+      .where(
+        and(
+          eq(inheritanceClaims.claimType, 'transfer_request'),
+          eq(inheritanceClaims.claimantEmail, user?.email || '')
+        )
+      )
+      .orderBy(desc(inheritanceClaims.createdAt));
+  }
+
+  async canUserAccessClaim(userId: string, claimId: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+
+    const [claim] = await db
+      .select()
+      .from(inheritanceClaims)
+      .where(eq(inheritanceClaims.id, claimId));
+
+    if (!claim) return false;
+
+    // User can access if they are the claimant
+    if (claim.claimantEmail === user.email) return true;
+
+    // User can access if it's related to their will
+    if (claim.willId) {
+      const [will] = await db
+        .select()
+        .from(digitalWills)
+        .where(and(
+          eq(digitalWills.id, claim.willId),
+          eq(digitalWills.userId, userId)
+        ));
+      if (will) return true;
+    }
+
+    // User can access if it's related to their consignment
+    if (claim.consignmentId) {
+      const [consignment] = await db
+        .select()
+        .from(consignments)
+        .where(and(
+          eq(consignments.id, claim.consignmentId),
+          eq(consignments.userId, userId)
+        ));
+      if (consignment) return true;
+    }
+
+    return false;
+  }
+
   // Support ticket operations
   async createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket> {
     const [created] = await db
@@ -675,11 +775,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(adminNotifications.id, notificationId));
   }
 
-  async markAllNotificationsAsRead(adminId: string): Promise<void> {
+  async markNotificationAsRead(notificationId: string): Promise<void> {
     await db
       .update(adminNotifications)
       .set({ isRead: true })
-      .where(eq(adminNotifications.adminId, adminId));
+      .where(eq(adminNotifications.id, notificationId));
   }
 
   async deleteNotification(notificationId: string): Promise<void> {
@@ -1006,6 +1106,99 @@ export class DatabaseStorage implements IStorage {
         readAt: new Date()
       })
       .where(eq(customerNotifications.id, notificationId));
+  }
+
+  async getUnreadNotificationCount(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(customerNotifications)
+      .where(and(
+        eq(customerNotifications.userId, userId),
+        isNull(customerNotifications.readAt)
+      ));
+    return result[0]?.count || 0;
+  }
+
+  async getNotificationSummary(userId: string): Promise<{total: number; unread: number; urgent: number; byType: Record<string, number>}> {
+    const notifications = await this.getCustomerNotifications(userId);
+    
+    const summary = {
+      total: notifications.length,
+      unread: notifications.filter(n => !n.readAt).length,
+      urgent: notifications.filter(n => n.type === 'urgent_notification' || n.title.toLowerCase().includes('urgent')).length,
+      byType: {} as Record<string, number>
+    };
+
+    notifications.forEach(notification => {
+      summary.byType[notification.type] = (summary.byType[notification.type] || 0) + 1;
+    });
+
+    return summary;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await db
+      .update(customerNotifications)
+      .set({
+        readAt: new Date()
+      })
+      .where(and(
+        eq(customerNotifications.userId, userId),
+        isNull(customerNotifications.readAt)
+      ));
+  }
+
+  async respondToNotification(notificationId: string, userId: string, response: string, actionType?: string): Promise<void> {
+    // Get the notification to understand its context
+    const [notification] = await db
+      .select()
+      .from(customerNotifications)
+      .where(eq(customerNotifications.id, notificationId));
+
+    if (!notification || notification.userId !== userId) {
+      throw new Error("Notification not found or access denied");
+    }
+
+    // Mark notification as read
+    await this.markCustomerNotificationAsRead(notificationId);
+
+    // If it's related to a consignment, add to consignment events
+    if (notification.consignmentId && actionType) {
+      await this.addConsignmentEvent({
+        consignmentId: notification.consignmentId,
+        eventType: 'customer_response',
+        description: `Customer responded to notification: ${response}`,
+        actor: userId,
+        metadata: { 
+          notificationId, 
+          actionType, 
+          originalNotificationTitle: notification.title 
+        }
+      });
+    }
+
+    // Create admin notification about customer response
+    const allAdmins = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'admin'));
+
+    for (const admin of allAdmins) {
+      await this.createAdminNotification({
+        adminId: admin.id,
+        type: 'customer_response',
+        title: 'Customer Response to Notification',
+        message: `Customer responded to "${notification.title}": ${response}`,
+        priority: 'normal',
+        actionRequired: true,
+        metadata: { 
+          originalNotificationId: notificationId,
+          customerResponse: response,
+          actionType: actionType || 'general_response',
+          consignmentId: notification.consignmentId
+        }
+      });
+    }
   }
 
   // Additional support ticket functions

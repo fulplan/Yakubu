@@ -249,6 +249,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer claim management endpoints
+  app.get('/api/claims/mine', isAuthenticated, async (req: any, res) => {
+    try {
+      const claims = await storage.getUserClaims(req.user.id);
+      res.json(claims);
+    } catch (error) {
+      console.error("Error fetching user claims:", error);
+      res.status(500).json({ message: "Failed to fetch your claims" });
+    }
+  });
+
+  app.get('/api/claims/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const claim = await storage.getClaimById(req.params.id);
+      if (!claim) {
+        return res.status(404).json({ message: "Claim not found" });
+      }
+
+      // Check if user can access this claim (either claimant or owner of related will/consignment)
+      const canAccess = await storage.canUserAccessClaim(req.user.id, req.params.id);
+      if (!canAccess) {
+        return res.status(403).json({ message: "Access denied to this claim" });
+      }
+
+      res.json(claim);
+    } catch (error) {
+      console.error("Error fetching claim:", error);
+      res.status(500).json({ message: "Failed to fetch claim details" });
+    }
+  });
+
+  app.post('/api/claims/:id/response', isAuthenticated, async (req: any, res) => {
+    try {
+      const { message } = req.body;
+      const claimId = req.params.id;
+      
+      // Verify user can respond to this claim
+      const canAccess = await storage.canUserAccessClaim(req.user.id, claimId);
+      if (!canAccess) {
+        return res.status(403).json({ message: "Access denied to this claim" });
+      }
+
+      await storage.addClaimCommunication(claimId, message, false, req.user.id);
+      res.json({ message: "Response added successfully" });
+    } catch (error) {
+      console.error("Error adding claim response:", error);
+      res.status(500).json({ message: "Failed to add response" });
+    }
+  });
+
+  // Ownership change request endpoints
+  app.post('/api/ownership-change-requests', isAuthenticated, uploadMiddleware.array('documents', 5), async (req: any, res) => {
+    try {
+      const claimData = insertClaimSchema.parse({
+        ...req.body,
+        claimType: 'transfer_request',
+        claimantEmail: req.user.email,
+        claimantName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim(),
+        documentUrls: req.files ? (req.files as Express.Multer.File[]).map(file => file.path) : [],
+      });
+
+      const claim = await storage.createClaim(claimData);
+      res.status(201).json(claim);
+    } catch (error) {
+      console.error("Error creating ownership change request:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create ownership change request" });
+    }
+  });
+
+  app.get('/api/ownership-change-requests/mine', isAuthenticated, async (req: any, res) => {
+    try {
+      const claims = await storage.getUserOwnershipChangeRequests(req.user.id);
+      res.json(claims);
+    } catch (error) {
+      console.error("Error fetching ownership change requests:", error);
+      res.status(500).json({ message: "Failed to fetch your ownership change requests" });
+    }
+  });
+
   // Admin APIs
   app.get('/api/admin/pending-claims', isAdmin, async (req, res) => {
     try {
@@ -727,6 +806,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/notifications/count', isAuthenticated, async (req: any, res) => {
+    try {
+      const count = await storage.getUnreadNotificationCount(req.user.id);
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching notification count:", error);
+      res.status(500).json({ message: "Failed to fetch notification count" });
+    }
+  });
+
+  app.get('/api/notifications/summary', isAuthenticated, async (req: any, res) => {
+    try {
+      const summary = await storage.getNotificationSummary(req.user.id);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching notification summary:", error);
+      res.status(500).json({ message: "Failed to fetch notification summary" });
+    }
+  });
+
   app.patch('/api/notifications/:id/read', isAuthenticated, async (req, res) => {
     try {
       await storage.markCustomerNotificationAsRead(req.params.id);
@@ -734,6 +833,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking notification as read:", error);
       res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.patch('/api/notifications/mark-all-read', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.markAllNotificationsAsRead(req.user.id);
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  app.post('/api/notifications/:id/respond', isAuthenticated, async (req: any, res) => {
+    try {
+      const { response, actionType } = req.body;
+      await storage.respondToNotification(req.params.id, req.user.id, response, actionType);
+      res.json({ message: "Response sent successfully" });
+    } catch (error) {
+      console.error("Error responding to notification:", error);
+      res.status(500).json({ message: "Failed to respond to notification" });
     }
   });
 

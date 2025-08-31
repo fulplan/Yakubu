@@ -54,7 +54,7 @@ export default function Dashboard() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab && ['portfolio', 'consignments', 'certificates', 'inheritance', 'tracking', 'notifications'].includes(tab)) {
+    if (tab && ['portfolio', 'consignments', 'certificates', 'inheritance', 'tracking', 'notifications', 'claims', 'ownership-requests'].includes(tab)) {
       setActiveTab(tab);
       // Clean up URL without triggering page reload
       window.history.replaceState({}, '', window.location.pathname);
@@ -68,6 +68,25 @@ export default function Dashboard() {
     allocation: 50,
     instructions: "",
   });
+
+  // Ownership Change Request State
+  const [ownershipRequest, setOwnershipRequest] = useState({
+    consignmentId: "",
+    requestedAction: "transfer",
+    relationship: "",
+    claimReason: "",
+    newOwnerName: "",
+    newOwnerEmail: "",
+    newOwnerPhone: "",
+  });
+
+  // Claims view state
+  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [claimResponse, setClaimResponse] = useState("");
+
+  // Notification response state
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [notificationResponse, setNotificationResponse] = useState("");
 
   // Auth protection
   // Removed the problematic useEffect that was causing redirects
@@ -125,7 +144,151 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  // Fetch user inheritance claims
+  const { data: userClaims = [] } = useQuery({
+    queryKey: ["/api/claims/mine"],
+    enabled: !!user,
+  });
+
+  // Fetch ownership change requests
+  const { data: ownershipRequests = [] } = useQuery({
+    queryKey: ["/api/ownership-change-requests/mine"],
+    enabled: !!user,
+  });
+
+  // Fetch notification count and summary
+  const { data: notificationCount = { count: 0 } } = useQuery({
+    queryKey: ["/api/notifications/count"],
+    enabled: !!user,
+  });
+
+  const { data: notificationSummary = { total: 0, unread: 0, urgent: 0, byType: {} } } = useQuery({
+    queryKey: ["/api/notifications/summary"],
+    enabled: !!user,
+  });
+
   // Mutations
+  const createOwnershipRequestMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const formData = new FormData();
+      Object.keys(data).forEach(key => {
+        if (key !== 'documents') {
+          formData.append(key, data[key]);
+        }
+      });
+      if (data.documents) {
+        data.documents.forEach((file: File) => {
+          formData.append('documents', file);
+        });
+      }
+      return apiRequest("/api/ownership-change-requests", {
+        method: "POST",
+        body: formData,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Ownership change request submitted successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/ownership-change-requests/mine"] });
+      setOwnershipRequest({
+        consignmentId: "",
+        requestedAction: "transfer",
+        relationship: "",
+        claimReason: "",
+        newOwnerName: "",
+        newOwnerEmail: "",
+        newOwnerPhone: "",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit ownership change request",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const respondToClaimMutation = useMutation({
+    mutationFn: async ({ claimId, message }: { claimId: string; message: string }) => {
+      return apiRequest(`/api/claims/${claimId}/response`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Response sent successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/claims/mine"] });
+      setClaimResponse("");
+      setSelectedClaim(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send response",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const respondToNotificationMutation = useMutation({
+    mutationFn: async ({ notificationId, response, actionType }: { notificationId: string; response: string; actionType?: string }) => {
+      return apiRequest(`/api/notifications/${notificationId}/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response, actionType }),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Response sent successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/summary"] });
+      setNotificationResponse("");
+      setSelectedNotification(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send response",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const markAllNotificationsReadMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("/api/notifications/mark-all-read", {
+        method: "PATCH",
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "All notifications marked as read"
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications/summary"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark notifications as read",
+        variant: "destructive"
+      });
+    }
+  });
+
   const createWillMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiRequest("POST", "/api/digital-wills", data);
@@ -272,18 +435,17 @@ export default function Dashboard() {
   // Mobile Bottom Navigation Component
   const MobileBottomNav = () => (
     <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 md:hidden shadow-lg">
-      <div className="grid grid-cols-5 px-1 py-3 safe-area-inset-bottom">
+      <div className="grid grid-cols-4 px-1 py-3 safe-area-inset-bottom">
         {[
           { id: 'portfolio', icon: Home, label: 'Portfolio', shortLabel: 'Home' },
           { id: 'consignments', icon: Package, label: 'Consignments', shortLabel: 'Assets' },
-          { id: 'certificates', icon: FileText, label: 'Certificates', shortLabel: 'Docs' },
           { id: 'inheritance', icon: Shield, label: 'Inheritance', shortLabel: 'Will' },
-          { id: 'tracking', icon: ExternalLink, label: 'Tracking', shortLabel: 'Track' }
-        ].map(({ id, icon: Icon, label, shortLabel }) => (
+          { id: 'notifications', icon: Bell, label: 'Notifications', shortLabel: 'Alerts', badge: notificationCount.count }
+        ].map(({ id, icon: Icon, label, shortLabel, badge }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex flex-col items-center justify-center py-2 px-1 min-h-[64px] transition-all duration-200 rounded-lg mx-1 ${
+            className={`flex flex-col items-center justify-center py-2 px-1 min-h-[64px] transition-all duration-200 rounded-lg mx-1 relative ${
               activeTab === id 
                 ? 'text-primary bg-primary/10' 
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -292,6 +454,11 @@ export default function Dashboard() {
             aria-label={label}
           >
             <Icon className={`h-6 w-6 mb-1 ${activeTab === id ? 'scale-110' : ''} transition-transform`} />
+            {badge && badge > 0 && (
+              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {badge > 99 ? '99+' : badge}
+              </div>
+            )}
             <span className="text-[10px] font-medium leading-tight text-center max-w-[60px] truncate">
               {shortLabel}
             </span>
@@ -384,7 +551,7 @@ export default function Dashboard() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-8" data-testid="dashboard-tabs">
           {/* Desktop Tabs - Hidden on Mobile */}
-          <TabsList className="hidden md:grid w-full grid-cols-8 gap-1 h-auto p-2 bg-muted">
+          <TabsList className="hidden md:grid w-full grid-cols-9 gap-1 h-auto p-2 bg-muted">
             <TabsTrigger 
               value="portfolio" 
               data-testid="tab-portfolio"
@@ -432,7 +599,21 @@ export default function Dashboard() {
               data-testid="tab-notifications"
               className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
             >
-              <span className="font-medium">Notifications</span>
+              <div className="relative">
+                <span className="font-medium">Notifications</span>
+                {notificationCount.count > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {notificationCount.count > 99 ? '99+' : notificationCount.count}
+                  </div>
+                )}
+              </div>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="claims" 
+              data-testid="tab-claims"
+              className="flex flex-col items-center justify-center p-4 text-sm min-h-[40px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <span className="font-medium">Claims</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1198,6 +1379,331 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Claims Tab */}
+          <TabsContent value="claims" className="space-y-4 md:space-y-6" data-testid="claims-content">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold">Inheritance Claims & Ownership Requests</h3>
+              <div className="flex gap-2">
+                <Badge variant="secondary" className="px-3 py-1">
+                  {userClaims.length} Claims
+                </Badge>
+                <Badge variant="outline" className="px-3 py-1">
+                  {ownershipRequests.length} Requests
+                </Badge>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <Button
+                onClick={() => setActiveTab('inheritance')}
+                variant="outline"
+                className="p-6 h-auto flex-col"
+                data-testid="button-manage-inheritance"
+              >
+                <Shield className="h-8 w-8 mb-2 text-primary" />
+                <span className="font-semibold">Manage Digital Will</span>
+                <span className="text-sm text-muted-foreground mt-1">Set up inheritance planning</span>
+              </Button>
+              
+              <Button
+                onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+                variant="outline" 
+                className="p-6 h-auto flex-col"
+                data-testid="button-new-ownership-request"
+              >
+                <Edit className="h-8 w-8 mb-2 text-primary" />
+                <span className="font-semibold">Request Ownership Change</span>
+                <span className="text-sm text-muted-foreground mt-1">Transfer or update ownership</span>
+              </Button>
+            </div>
+
+            {/* Inheritance Claims List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2" />
+                  My Inheritance Claims
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {userClaims.length > 0 ? (
+                  <div className="space-y-4">
+                    {userClaims.map((claim: any) => (
+                      <div 
+                        key={claim.id} 
+                        className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                        data-testid={`claim-${claim.id}`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold text-lg">{claim.claimType.replace(/_/g, ' ').toUpperCase()}</h4>
+                            <p className="text-sm text-muted-foreground">Claim #{claim.claimNumber}</p>
+                          </div>
+                          <Badge 
+                            variant={
+                              claim.status === 'approved' ? 'default' :
+                              claim.status === 'rejected' ? 'destructive' :
+                              claim.status === 'under_review' ? 'secondary' : 'outline'
+                            }
+                          >
+                            {claim.status.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                          <div>
+                            <p className="text-sm font-medium">Filed Date</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(claim.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Consignment</p>
+                            <p className="text-sm text-muted-foreground">{claim.consignmentNumber}</p>
+                          </div>
+                        </div>
+
+                        {claim.claimReason && (
+                          <div className="mb-3">
+                            <p className="text-sm font-medium">Reason</p>
+                            <p className="text-sm text-muted-foreground">{claim.claimReason}</p>
+                          </div>
+                        )}
+
+                        {(claim.status === 'pending_response' || claim.status === 'under_review') && (
+                          <div className="flex items-center space-x-2 mt-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedClaim(claim)}
+                              data-testid={`respond-claim-${claim.id}`}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Respond
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Claims Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      You haven't filed any inheritance claims yet.
+                    </p>
+                    <Button 
+                      onClick={() => setActiveTab('inheritance')}
+                      variant="outline"
+                      data-testid="button-setup-will"
+                    >
+                      Set Up Digital Will
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Ownership Change Requests */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Edit className="h-5 w-5 mr-2" />
+                  Ownership Change Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ownershipRequests.length > 0 ? (
+                  <div className="space-y-4">
+                    {ownershipRequests.map((request: any) => (
+                      <div 
+                        key={request.id} 
+                        className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                        data-testid={`ownership-request-${request.id}`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold text-lg">{request.requestedAction.replace(/_/g, ' ').toUpperCase()}</h4>
+                            <p className="text-sm text-muted-foreground">Request #{request.requestNumber}</p>
+                          </div>
+                          <Badge 
+                            variant={
+                              request.status === 'approved' ? 'default' :
+                              request.status === 'rejected' ? 'destructive' :
+                              request.status === 'under_review' ? 'secondary' : 'outline'
+                            }
+                          >
+                            {request.status.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                          <div>
+                            <p className="text-sm font-medium">Filed Date</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(request.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Consignment</p>
+                            <p className="text-sm text-muted-foreground">{request.consignmentNumber}</p>
+                          </div>
+                        </div>
+
+                        {request.newOwnerName && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                            <div>
+                              <p className="text-sm font-medium">New Owner</p>
+                              <p className="text-sm text-muted-foreground">{request.newOwnerName}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">New Owner Email</p>
+                              <p className="text-sm text-muted-foreground">{request.newOwnerEmail}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {request.claimReason && (
+                          <div className="mb-3">
+                            <p className="text-sm font-medium">Reason</p>
+                            <p className="text-sm text-muted-foreground">{request.claimReason}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Edit className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Ownership Requests</h3>
+                    <p className="text-muted-foreground">
+                      You haven't submitted any ownership change requests yet.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Action - New Ownership Change Request */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Request Ownership Change
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="consignment-select">Select Consignment</Label>
+                    <Select 
+                      value={ownershipRequest.consignmentId} 
+                      onValueChange={(value) => setOwnershipRequest({...ownershipRequest, consignmentId: value})}
+                    >
+                      <SelectTrigger data-testid="select-consignment">
+                        <SelectValue placeholder="Choose consignment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {consignments.map((consignment: any) => (
+                          <SelectItem key={consignment.id} value={consignment.id}>
+                            {consignment.consignmentNumber} - {consignment.description}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="action-select">Requested Action</Label>
+                    <Select 
+                      value={ownershipRequest.requestedAction} 
+                      onValueChange={(value) => setOwnershipRequest({...ownershipRequest, requestedAction: value})}
+                    >
+                      <SelectTrigger data-testid="select-action">
+                        <SelectValue placeholder="Choose action" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="transfer">Transfer</SelectItem>
+                        <SelectItem value="change_beneficiary">Change Beneficiary</SelectItem>
+                        <SelectItem value="update_details">Update Details</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-owner-name">New Owner Name</Label>
+                    <Input
+                      id="new-owner-name"
+                      value={ownershipRequest.newOwnerName}
+                      onChange={(e) => setOwnershipRequest({...ownershipRequest, newOwnerName: e.target.value})}
+                      placeholder="Full name"
+                      data-testid="input-new-owner-name"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="new-owner-email">New Owner Email</Label>
+                    <Input
+                      id="new-owner-email"
+                      type="email"
+                      value={ownershipRequest.newOwnerEmail}
+                      onChange={(e) => setOwnershipRequest({...ownershipRequest, newOwnerEmail: e.target.value})}
+                      placeholder="email@example.com"
+                      data-testid="input-new-owner-email"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="new-owner-phone">New Owner Phone</Label>
+                    <Input
+                      id="new-owner-phone"
+                      value={ownershipRequest.newOwnerPhone}
+                      onChange={(e) => setOwnershipRequest({...ownershipRequest, newOwnerPhone: e.target.value})}
+                      placeholder="+1 (555) 123-4567"
+                      data-testid="input-new-owner-phone"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="relationship">Relationship to Current Owner</Label>
+                  <Input
+                    id="relationship"
+                    value={ownershipRequest.relationship}
+                    onChange={(e) => setOwnershipRequest({...ownershipRequest, relationship: e.target.value})}
+                    placeholder="e.g., Spouse, Child, Beneficiary"
+                    data-testid="input-relationship"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="claim-reason">Reason for Change</Label>
+                  <Textarea
+                    id="claim-reason"
+                    value={ownershipRequest.claimReason}
+                    onChange={(e) => setOwnershipRequest({...ownershipRequest, claimReason: e.target.value})}
+                    placeholder="Please explain the reason for this ownership change request..."
+                    rows={3}
+                    data-testid="textarea-claim-reason"
+                  />
+                </div>
+
+                <Button
+                  onClick={() => createOwnershipRequestMutation.mutate(ownershipRequest)}
+                  disabled={createOwnershipRequestMutation.isPending || !ownershipRequest.consignmentId || !ownershipRequest.newOwnerName}
+                  className="w-full"
+                  data-testid="submit-ownership-request"
+                >
+                  {createOwnershipRequestMutation.isPending ? "Submitting..." : "Submit Request"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -1208,6 +1714,125 @@ export default function Dashboard() {
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
+
+      {/* Claim Response Modal */}
+      {selectedClaim && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Respond to Claim</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedClaim(null)}
+                  data-testid="close-claim-modal"
+                >
+                  ✕
+                </Button>
+              </div>
+              
+              <div className="mb-4">
+                <p className="font-medium">{selectedClaim.claimType.replace(/_/g, ' ').toUpperCase()}</p>
+                <p className="text-sm text-muted-foreground">Claim #{selectedClaim.claimNumber}</p>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="claim-response">Your Response</Label>
+                <Textarea
+                  id="claim-response"
+                  value={claimResponse}
+                  onChange={(e) => setClaimResponse(e.target.value)}
+                  placeholder="Provide additional information or clarification for your claim..."
+                  rows={4}
+                  data-testid="textarea-claim-response"
+                />
+              </div>
+
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedClaim(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => respondToClaimMutation.mutate({ claimId: selectedClaim.id, message: claimResponse })}
+                  disabled={respondToClaimMutation.isPending || !claimResponse.trim()}
+                  className="flex-1"
+                  data-testid="send-claim-response"
+                >
+                  {respondToClaimMutation.isPending ? "Sending..." : "Send Response"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Response Modal */}
+      {selectedNotification && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Respond to Notification</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedNotification(null)}
+                  data-testid="close-notification-modal"
+                >
+                  ✕
+                </Button>
+              </div>
+              
+              <div className="mb-4">
+                <p className="font-medium">{selectedNotification.type.replace(/_/g, ' ').toUpperCase()}</p>
+                <p className="text-sm text-muted-foreground mb-2">{selectedNotification.message}</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(selectedNotification.createdAt).toLocaleString()}
+                </p>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="notification-response">Your Response</Label>
+                <Textarea
+                  id="notification-response"
+                  value={notificationResponse}
+                  onChange={(e) => setNotificationResponse(e.target.value)}
+                  placeholder="Provide your response or action on this notification..."
+                  rows={4}
+                  data-testid="textarea-notification-response"
+                />
+              </div>
+
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedNotification(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => respondToNotificationMutation.mutate({ 
+                    notificationId: selectedNotification.id, 
+                    response: notificationResponse,
+                    actionType: 'customer_response'
+                  })}
+                  disabled={respondToNotificationMutation.isPending || !notificationResponse.trim()}
+                  className="flex-1"
+                  data-testid="send-notification-response"
+                >
+                  {respondToNotificationMutation.isPending ? "Sending..." : "Send Response"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
