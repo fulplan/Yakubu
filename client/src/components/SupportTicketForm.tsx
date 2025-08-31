@@ -20,8 +20,8 @@ const ticketSchema = z.object({
   category: z.string().min(1, "Please select a category"),
   priority: z.enum(["low", "medium", "high", "urgent"]),
   description: z.string().min(20, "Description must be at least 20 characters"),
-  customerEmail: z.string().email("Valid email required").optional(),
-  customerName: z.string().min(2, "Name must be at least 2 characters").optional(),
+  customerEmail: z.string().email("Valid email required").optional().or(z.literal("")),
+  customerName: z.string().min(2, "Name must be at least 2 characters").optional().or(z.literal("")),
 });
 
 type TicketFormData = z.infer<typeof ticketSchema>;
@@ -101,9 +101,15 @@ export default function SupportTicketForm({ onSuccess, initialData, guestMode = 
   });
 
   const onSubmit = async (data: TicketFormData) => {
+    console.log('Form submitted with data:', data);
+    console.log('User:', user);
+    console.log('Guest mode:', guestMode);
+    
     setIsSubmitting(true);
     try {
       await createTicketMutation.mutateAsync(data);
+    } catch (error) {
+      console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);
     }
