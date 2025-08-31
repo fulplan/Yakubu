@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+// Removed isUnauthorizedError import as auth is handled by ProtectedRoute
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,19 +70,8 @@ export default function Dashboard() {
   });
 
   // Auth protection
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
+  // Removed the problematic useEffect that was causing redirects
+  // Authentication is now handled by ProtectedRoute in App.tsx
 
   // Data queries
   const { data: consignments = [], isLoading: consignmentsLoading } = useQuery({
@@ -150,17 +139,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/digital-wills"] });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      // Auth handled by ProtectedRoute
       toast({
         title: "Failed to Create Will",
         description: error.message || "An error occurred while creating your digital will.",
@@ -188,17 +167,7 @@ export default function Dashboard() {
       });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      // Auth handled by ProtectedRoute
       toast({
         title: "Failed to Add Beneficiary",
         description: error.message || "An error occurred while adding the beneficiary.",
@@ -219,17 +188,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/digital-wills"] });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      // Auth handled by ProtectedRoute
       toast({
         title: "Failed to Remove Beneficiary",
         description: error.message || "An error occurred while removing the beneficiary.",
