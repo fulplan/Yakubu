@@ -16,6 +16,7 @@ import TrackingPortal from "@/pages/track";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
 import Support from "@/pages/Support";
+import SupportTicket from "@/pages/support-ticket";
 import AuthPage from "@/pages/auth-page";
 
 function ProtectedRoute({ children, requiredRole = null }: { children: React.ReactNode; requiredRole?: string | null }) {
@@ -106,6 +107,13 @@ function Router() {
         {() => (
           <ProtectedRoute>
             <Support />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/support/:ticketId">
+        {() => (
+          <ProtectedRoute>
+            <SupportTicket />
           </ProtectedRoute>
         )}
       </Route>

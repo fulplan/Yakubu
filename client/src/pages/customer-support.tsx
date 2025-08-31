@@ -111,9 +111,6 @@ export default function CustomerSupport() {
   });
 
   const onSubmit = async (data: SupportTicketData) => {
-    console.log("Form submitted with data:", data);
-    console.log("Form errors:", form.formState.errors);
-    
     // Additional validation check
     if (!data.subject || !data.description || !data.category) {
       toast({

@@ -28,7 +28,7 @@ export default function SupportTicket() {
     queryKey: ["/api/support-tickets", ticketId],
     queryFn: async () => {
       if (!ticketId) return null;
-      const response = await apiRequest("GET", `/api/support-tickets/${ticketId}`);
+      const response = await apiRequest("GET", `/api/support/tickets/${ticketId}`);
       if (!response.ok) {
         if (response.status === 404) throw new Error("Ticket not found");
         throw new Error("Failed to fetch ticket");
