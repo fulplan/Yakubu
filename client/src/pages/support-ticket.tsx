@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MessageSquare, Clock, User, Send, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import MobileBackNav from "@/components/MobileBackNav";
 import { useLocation } from "wouter";
 
