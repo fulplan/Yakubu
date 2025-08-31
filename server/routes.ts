@@ -996,9 +996,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Ticket not found" });
       }
       
+      // Create a session ID if the ticket doesn't have one
+      let sessionId = ticket.chatSessionId;
+      if (!sessionId) {
+        sessionId = `ticket-${ticketId}`;
+        await storage.updateSupportTicket(ticketId, { chatSessionId: sessionId });
+      }
+      
       // Save the response message
       const chatMessage = await storage.saveChatMessage({
-        sessionId: ticket.chatSessionId,
+        sessionId: sessionId,
         ticketId: ticketId,
         userId: req.user.id,
         isCustomer: false,

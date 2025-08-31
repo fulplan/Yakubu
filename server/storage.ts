@@ -112,6 +112,7 @@ export interface IStorage {
   getTicketsByAdmin(adminId: string): Promise<SupportTicket[]>;
   updateTicketStatus(id: string, status: string, adminId?: string): Promise<void>;
   updateTicketPriority(id: string, priority: string): Promise<void>;
+  updateSupportTicket(id: string, updates: Partial<SupportTicket>): Promise<void>;
   assignTicketToAdmin(ticketId: string, adminId: string): Promise<void>;
   escalateTicket(ticketId: string, escalatedBy: string, reason: string): Promise<void>;
   resolveTicket(ticketId: string, resolvedBy: string, resolutionNotes: string): Promise<void>;
@@ -739,6 +740,17 @@ export class DatabaseStorage implements IStorage {
       .update(supportTickets)
       .set({ 
         priority, 
+        updatedAt: new Date(),
+        lastActivity: new Date()
+      })
+      .where(eq(supportTickets.id, id));
+  }
+
+  async updateSupportTicket(id: string, updates: Partial<SupportTicket>): Promise<void> {
+    await db
+      .update(supportTickets)
+      .set({ 
+        ...updates,
         updatedAt: new Date(),
         lastActivity: new Date()
       })

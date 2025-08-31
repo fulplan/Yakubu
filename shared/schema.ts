@@ -208,7 +208,7 @@ export const customerNotifications = pgTable("customer_notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
   customerEmail: varchar("customer_email"), // For users without accounts
-  consignmentId: varchar("consignment_id").notNull().references(() => consignments.id),
+  consignmentId: varchar("consignment_id").references(() => consignments.id),
   trackingUpdateId: varchar("tracking_update_id").references(() => trackingUpdates.id),
   type: varchar("type").notNull(), // status_update, delivery_notification, schedule_change
   title: varchar("title").notNull(),

@@ -1,0 +1,47 @@
+Please fix and test the Support features end-to-end.
+
+We currently have separate Customer Support and Public Support sections, but they are not working as expected. Run a full simulation as both a real admin and a real customer to verify everything functions correctly.
+
+Customer Support (logged-in customers only):
+
+Customers must be able to create support tickets and send messages to admins.
+
+Admins must be able to respond, and customers must see admin replies inside their dashboard with notifications.
+
+Live chat between customers and admins must be functional and synced both ways. (Currently, the admin-to-customer live chat is not working—please fix this and test it thoroughly.)
+
+Customers must be able to view full ticket history and see status updates (Open, Pending, Resolved).
+
+Public Support (website visitors):
+
+Public support must be separate from Customer Support.
+
+Public visitors should only see FAQs, contact forms, or general inquiry options.
+
+Public inquiries should be delivered to admins but must not mix with customer tickets.
+
+Acceptance test steps (perform these exactly):
+
+Log in as a customer → create a ticket and send a message.
+
+Log in as an admin → locate the ticket → reply.
+
+Switch back to the customer → confirm the admin response appears and a notification is shown.
+
+Test live chat both ways (customer ↔ admin) and make sure the admin-to-customer side is working.
+
+Verify public support and customer support are separate and do not overlap.
+
+Additional fixes & checks:
+
+Create/repair the admin login database and ensure password hashing is implemented properly. Test admin login and fix any related failures.
+
+Fix any "send message" failures; test and debug messaging end-to-end.
+
+Review and fix mobile view/layout responsiveness so the UI is user-friendly, especially for older users (readable fonts, large tap targets, clear navigation).
+
+Remove duplicate features and navigation issues (e.g., duplicate back buttons in the Create Ticket flow, incorrect top navbar shown in customer pages). Ensure the customer dashboard shows the correct customer navbar.
+
+Ensure customers remain logged in and can perform all account actions without being redirected to public pages.
+
+Everything should feel smooth, real, and fully functional. Please run these tests, fix all broken parts (especially live chat between admin ↔ customer), and improve the system so it works like a real-world support platform. Thank you

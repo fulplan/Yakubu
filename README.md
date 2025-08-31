@@ -33,13 +33,23 @@ A comprehensive gold consignment and digital inheritance platform built with Rea
 - **User Management**: Comprehensive user administration
 - **Analytics Dashboard**: Business insights and reporting
 
+### Customer Support System
+
+- **Customer Support Tickets**: Authenticated users can create and manage support tickets
+- **Public Support**: Website visitors can submit general inquiries without registration  
+- **Admin Response System**: Admins can respond to tickets with real-time messaging
+- **Live Chat Integration**: Real-time chat between customers and support team
+- **Ticket Management**: Status tracking (Open, Pending, Resolved, Closed)
+- **Notification System**: Customer notifications for admin responses
+- **Support Categories**: General, Technical, Account, Billing, Consignment support
+
 ### Additional Features
 
-- **Live Chat Support**: Real-time customer support system
 - **Pricing Calculator**: Dynamic storage cost calculation
 - **Multi-currency Support**: USD, GBP, EUR pricing
-- **Responsive Design**: Mobile-first responsive design
+- **Responsive Design**: Mobile-first responsive design optimized for older users
 - **File Upload**: Secure document and certificate management
+- **Knowledge Base**: Searchable help articles and FAQs
 
 ## 🏗️ System Architecture
 
@@ -69,13 +79,19 @@ A comprehensive gold consignment and digital inheritance platform built with Rea
 - **Digital Wills**: Inheritance planning
 - **Beneficiaries**: Will beneficiary management
 - **Claims**: Inheritance claims processing
-- **Chat Messages**: Customer support history
+- **Support Tickets**: Customer and public support requests
+- **Chat Messages**: Real-time support conversation history
+- **Admin Notifications**: Internal notification system for ticket responses
+- **Customer Notifications**: Customer notification tracking
 - **Audit Events**: Immutable tracking logs
 
 ## 🚀 Getting Started
 
-create credentials for admin :
-admin@admin.com/admin123
+### Default Admin Credentials
+
+**Admin Login:** `admin@admin.com` / `admin123`
+
+**Customer Test Account:** `customer@test.com` / `test123` (created during testing)
 
 ### Prerequisites
 
@@ -204,10 +220,26 @@ Users can register with:
 - `GET /api/admin/pending-claims` - Get pending claims
 - `PATCH /api/admin/claims/:id/status` - Update claim status
 
+### Support System
+
+- `POST /api/support/tickets` - Create support ticket (public or authenticated)
+- `GET /api/support-tickets/mine` - Get user's support tickets (authenticated)
+- `GET /api/chat/ticket/:ticketId` - Get ticket messages (authenticated)
+- `POST /api/chat/ticket/:ticketId/message` - Send message to ticket (authenticated)
+
+### Admin Support Management (Admin Role Required)
+
+- `GET /api/admin/support-tickets` - Get all support tickets
+- `POST /api/admin/support-tickets/:id/respond` - Respond to customer ticket
+- `PATCH /api/admin/support-tickets/:id/status` - Update ticket status
+- `PATCH /api/admin/support-tickets/:id/priority` - Update ticket priority
+- `POST /api/admin/support-tickets/:id/assign` - Assign ticket to admin
+
 ### Other Services
 
 - `GET /api/gold-prices` - Get current gold prices
 - `GET /api/storage-plans` - Get available storage plans
+- `GET /api/knowledge-base` - Get help articles and FAQs
 
 ## 🛡️ Security Features
 
