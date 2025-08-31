@@ -102,23 +102,23 @@ export default function Dashboard() {
     queryKey: ["/api/digital-wills"],
     enabled: !!user,
     retry: false,
-  });
+  }) as { data: any, isLoading: boolean };
 
-  const { data: goldPrices } = useQuery({
+  const { data: goldPrices = {} } = useQuery({
     queryKey: ["/api/gold-prices"],
-  });
+  }) as { data: any };
 
   // Fetch user account balance
   const { data: accountBalance = { balance: 0 } } = useQuery({
     queryKey: ["/api/account/balance"],
     enabled: !!user,
-  });
+  }) as { data: any };
 
   // Fetch user gold balance
   const { data: goldBalance = { totalWeight: 0, totalValue: 0, avgPurity: 0, activeItems: 0 } } = useQuery({
     queryKey: ["/api/gold/balance"],
     enabled: !!user,
-  });
+  }) as { data: any };
 
   // Fetch user gold holdings
   const { data: goldHoldings = [] } = useQuery({
@@ -149,20 +149,20 @@ export default function Dashboard() {
     queryKey: ["/api/claims/mine"],
     enabled: !!user && !!isAuthenticated,
     retry: false,
-  });
+  }) as { data: any[], error: any };
 
   // Fetch ownership change requests
   const { data: ownershipRequests = [], error: ownershipError } = useQuery({
     queryKey: ["/api/ownership-change-requests/mine"],
     enabled: !!user && !!isAuthenticated,
     retry: false,
-  });
+  }) as { data: any[], error: any };
 
   // Fetch notification count and summary
   const { data: notificationCount = { count: 0 } } = useQuery({
     queryKey: ["/api/notifications/count"],
     enabled: !!user,
-  });
+  }) as { data: any };
 
   const { data: notificationSummary = { total: 0, unread: 0, urgent: 0, byType: {} } } = useQuery({
     queryKey: ["/api/notifications/summary"],
@@ -183,10 +183,16 @@ export default function Dashboard() {
           formData.append('documents', file);
         });
       }
-      return apiRequest("/api/ownership-change-requests", {
+      const response = await fetch("/api/ownership-change-requests", {
         method: "POST",
         body: formData,
+        credentials: "include"
       });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `${response.status}: ${response.statusText}`);
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -215,11 +221,8 @@ export default function Dashboard() {
 
   const respondToClaimMutation = useMutation({
     mutationFn: async ({ claimId, message }: { claimId: string; message: string }) => {
-      return apiRequest(`/api/claims/${claimId}/response`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-      });
+      const response = await apiRequest("POST", `/api/claims/${claimId}/response`, { message });
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -241,11 +244,8 @@ export default function Dashboard() {
 
   const respondToNotificationMutation = useMutation({
     mutationFn: async ({ notificationId, response, actionType }: { notificationId: string; response: string; actionType?: string }) => {
-      return apiRequest(`/api/notifications/${notificationId}/respond`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ response, actionType }),
-      });
+      const resp = await apiRequest("POST", `/api/notifications/${notificationId}/respond`, { response, actionType });
+      return resp.json();
     },
     onSuccess: () => {
       toast({
