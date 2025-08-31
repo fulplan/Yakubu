@@ -454,13 +454,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addClaimCommunication(claimId: string, message: string, fromAdmin: boolean, adminId?: string): Promise<void> {
-    // Get current communication log
+    // Get current communication log and full claim details
     const [claim] = await db
-      .select({ communicationLog: inheritanceClaims.communicationLog })
+      .select()
       .from(inheritanceClaims)
       .where(eq(inheritanceClaims.id, claimId));
 
-    const currentLog = claim?.communicationLog as any[] || [];
+    if (!claim) {
+      throw new Error("Claim not found");
+    }
+
+    const currentLog = claim.communicationLog as any[] || [];
     
     const newCommunication = {
       id: crypto.randomUUID(),
@@ -479,6 +483,68 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date() 
       })
       .where(eq(inheritanceClaims.id, claimId));
+
+    // If this is an admin message, create customer notification
+    if (fromAdmin && adminId) {
+      // Find the customer user by email
+      const [customerUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, claim.claimantEmail));
+
+      // Create customer notification
+      await this.createCustomerNotification({
+        userId: customerUser?.id || null,
+        customerEmail: claim.claimantEmail,
+        consignmentId: claim.consignmentId || null,
+        type: 'claim_response',
+        title: `Admin Response to Your ${claim.claimType} Claim`,
+        message: message, // Use the actual admin message instead of generic text
+        notificationMethod: 'email',
+        metadata: { 
+          claimId,
+          communicationId: newCommunication.id,
+          claimType: claim.claimType
+        }
+      });
+
+      // Also create admin notification for other admins about the communication
+      if (claim.assignedTo && claim.assignedTo !== adminId) {
+        await this.createAdminNotification({
+          adminId: claim.assignedTo,
+          type: 'claim_update',
+          title: 'Claim Communication Added',
+          message: `Communication added to claim by admin`,
+          priority: 'normal',
+          actionRequired: false,
+          metadata: { claimId, communicationId: newCommunication.id }
+        });
+      }
+    }
+
+    // If this is a customer message, create admin notifications
+    if (!fromAdmin) {
+      const allAdmins = await db
+        .select()
+        .from(users)
+        .where(eq(users.role, 'admin'));
+
+      for (const admin of allAdmins) {
+        await this.createAdminNotification({
+          adminId: admin.id,
+          type: 'customer_response',
+          title: 'Customer Response to Claim',
+          message: `Customer responded to ${claim.claimType} claim: ${claim.claimReason?.substring(0, 50)}...`,
+          priority: 'normal',
+          actionRequired: true,
+          metadata: { 
+            claimId,
+            customerEmail: claim.claimantEmail,
+            communicationId: newCommunication.id
+          }
+        });
+      }
+    }
   }
 
   async updateClaimPriority(claimId: string, priority: string): Promise<void> {
@@ -988,7 +1054,7 @@ export class DatabaseStorage implements IStorage {
     await this.updateConsignmentTrackingStatus(
       update.consignmentId,
       update.status,
-      update.location
+      update.location || undefined
     );
     
     return trackingUpdate;
@@ -1172,6 +1238,11 @@ export class DatabaseStorage implements IStorage {
     // Mark notification as read
     await this.markCustomerNotificationAsRead(notificationId);
 
+    // If it's a claim response, add the customer response to the claim communication log
+    if (notification.type === 'claim_response' && notification.metadata?.claimId) {
+      await this.addClaimCommunication(notification.metadata.claimId, response, false);
+    }
+
     // If it's related to a consignment, add to consignment events
     if (notification.consignmentId && actionType) {
       await this.addConsignmentEvent({
@@ -1205,7 +1276,8 @@ export class DatabaseStorage implements IStorage {
           originalNotificationId: notificationId,
           customerResponse: response,
           actionType: actionType || 'general_response',
-          consignmentId: notification.consignmentId
+          consignmentId: notification.consignmentId,
+          claimId: notification.metadata?.claimId
         }
       });
     }

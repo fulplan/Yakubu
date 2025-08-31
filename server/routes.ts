@@ -479,6 +479,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get claim conversation history
+  app.get('/api/claims/:id/conversation', isAuthenticated, async (req: any, res) => {
+    try {
+      const claimId = req.params.id;
+      
+      // Verify user can access this claim
+      const canAccess = await storage.canUserAccessClaim(req.user.id, claimId);
+      if (!canAccess) {
+        return res.status(403).json({ message: "Access denied to this claim" });
+      }
+
+      const claim = await storage.getClaimById(claimId);
+      if (!claim) {
+        return res.status(404).json({ message: "Claim not found" });
+      }
+
+      // Return the communication log
+      const communicationLog = claim.communicationLog as any[] || [];
+      res.json(communicationLog);
+    } catch (error) {
+      console.error("Error fetching claim conversation:", error);
+      res.status(500).json({ message: "Failed to fetch conversation history" });
+    }
+  });
+
   app.patch('/api/admin/claims/:id/priority', isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -843,6 +868,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  // Add endpoint for responding to notifications
+  app.post('/api/notifications/:id/response', isAuthenticated, async (req: any, res) => {
+    try {
+      const { response, actionType } = req.body;
+      const notificationId = req.params.id;
+      
+      if (!response || !response.trim()) {
+        return res.status(400).json({ message: "Response is required" });
+      }
+
+      await storage.respondToNotification(notificationId, req.user.id, response, actionType);
+      res.json({ message: "Response sent successfully" });
+    } catch (error) {
+      console.error("Error responding to notification:", error);
+      res.status(500).json({ message: "Failed to send response" });
     }
   });
 

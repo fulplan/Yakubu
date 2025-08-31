@@ -244,7 +244,7 @@ export default function Dashboard() {
 
   const respondToNotificationMutation = useMutation({
     mutationFn: async ({ notificationId, response, actionType }: { notificationId: string; response: string; actionType?: string }) => {
-      const resp = await apiRequest("POST", `/api/notifications/${notificationId}/respond`, { response, actionType });
+      const resp = await apiRequest("POST", `/api/notifications/${notificationId}/response`, { response, actionType });
       return resp.json();
     },
     onSuccess: () => {
@@ -1273,6 +1273,12 @@ export default function Dashboard() {
                             <div className="flex items-center gap-2">
                               <div className={`w-2 h-2 rounded-full ${notification.readAt ? 'bg-gray-400' : 'bg-blue-500'}`}></div>
                               <span className="font-medium">{notification.title}</span>
+                              {notification.type === 'claim_response' && (
+                                <Badge variant="outline" className="text-xs">
+                                  <MessageSquare className="h-3 w-3 mr-1" />
+                                  Admin Response
+                                </Badge>
+                              )}
                               {notification.priority === 'urgent' && (
                                 <Badge variant="destructive" className="text-xs">Urgent</Badge>
                               )}
@@ -1284,31 +1290,44 @@ export default function Dashboard() {
                               {notification.readAt && <span>Read</span>}
                             </div>
                           </div>
-                          {!notification.readAt && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={async () => {
-                                try {
-                                  await apiRequest("PATCH", `/api/notifications/${notification.id}/read`, {});
-                                  queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-                                  toast({
-                                    title: "Notification marked as read",
-                                    description: "The notification has been marked as read.",
-                                  });
-                                } catch (error) {
-                                  toast({
-                                    title: "Error",
-                                    description: "Failed to mark notification as read.",
-                                    variant: "destructive",
-                                  });
-                                }
-                              }}
-                              data-testid={`button-mark-read-${notification.id}`}
-                            >
-                              Mark as Read
-                            </Button>
-                          )}
+                          <div className="flex flex-col gap-2">
+                            {notification.type === 'claim_response' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedNotification(notification)}
+                                data-testid={`button-respond-${notification.id}`}
+                              >
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                Respond
+                              </Button>
+                            )}
+                            {!notification.readAt && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                  try {
+                                    await apiRequest("PATCH", `/api/notifications/${notification.id}/read`, {});
+                                    queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+                                    toast({
+                                      title: "Notification marked as read",
+                                      description: "The notification has been marked as read.",
+                                    });
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to mark notification as read.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                                data-testid={`button-mark-read-${notification.id}`}
+                              >
+                                Mark as Read
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1774,13 +1793,15 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Notification Response Modal */}
+      {/* Enhanced Notification Response Modal with Conversation History */}
       {selectedNotification && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Respond to Notification</h3>
+          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">
+                  {selectedNotification.type === 'claim_response' ? 'Claim Communication' : 'Respond to Notification'}
+                </h3>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1791,22 +1812,89 @@ export default function Dashboard() {
                 </Button>
               </div>
               
-              <div className="mb-4">
+              <div className="mt-2">
                 <p className="font-medium">{selectedNotification.type.replace(/_/g, ' ').toUpperCase()}</p>
-                <p className="text-sm text-muted-foreground mb-2">{selectedNotification.message}</p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(selectedNotification.createdAt).toLocaleString()}
-                </p>
+                <p className="text-sm text-muted-foreground">{selectedNotification.title}</p>
               </div>
+            </div>
+            
+            {/* Conversation History for Claim Communications */}
+            {selectedNotification.type === 'claim_response' && (() => {
+              const claimId = selectedNotification.metadata?.claimId || selectedNotification.consignmentId;
+              const { data: conversation = [] } = useQuery({
+                queryKey: [`/api/claims/${claimId}/conversation`],
+                enabled: !!claimId,
+              });
+              
+              return (
+                <div className="flex-1 overflow-y-auto p-4 bg-muted/20">
+                  <h4 className="font-semibold mb-3 flex items-center">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Conversation History
+                  </h4>
+                  <div className="space-y-3 mb-4">
+                    {conversation.map((comm: any, index: number) => (
+                      <div 
+                        key={comm.id || index} 
+                        className={`p-3 rounded-lg max-w-[80%] ${
+                          comm.fromAdmin 
+                            ? 'bg-blue-50 border-blue-200 ml-auto border' 
+                            : 'bg-white border'
+                        }`}
+                        data-testid={`conversation-${index}`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          {comm.fromAdmin ? (
+                            <Badge variant="secondary" className="text-xs">
+                              <Shield className="h-3 w-3 mr-1" />
+                              Admin
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              <User className="h-3 w-3 mr-1" />
+                              You
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(comm.timestamp).toLocaleDateString()} {new Date(comm.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="text-sm">{comm.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            
+            {/* Current Notification Message */}
+            <div className="p-4 bg-muted/10 border-t border-b">
+              <div className="flex items-start gap-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="secondary" className="text-xs">
+                      <Shield className="h-3 w-3 mr-1" />
+                      Admin
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(selectedNotification.createdAt).toLocaleDateString()} {new Date(selectedNotification.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <p className="text-sm">{selectedNotification.message}</p>
+                </div>
+              </div>
+            </div>
 
+            {/* Response Input */}
+            <div className="p-6">
               <div className="space-y-2 mb-4">
                 <Label htmlFor="notification-response">Your Response</Label>
                 <Textarea
                   id="notification-response"
                   value={notificationResponse}
                   onChange={(e) => setNotificationResponse(e.target.value)}
-                  placeholder="Provide your response or action on this notification..."
-                  rows={4}
+                  placeholder="Type your response to the administrator..."
+                  rows={3}
                   data-testid="textarea-notification-response"
                 />
               </div>
