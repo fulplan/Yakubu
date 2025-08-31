@@ -18,13 +18,13 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
-      window.location.href = "/auth";
+      setLocation("/");
     } catch (error) {
-      window.location.href = "/auth";
+      setLocation("/");
     }
   };
 
-  const navItems = [
+  const publicNavItems = [
     { href: "/", label: "Home" },
     { href: "/#services", label: "Services" },
     { href: "/#pricing", label: "Pricing" },
@@ -32,7 +32,14 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
     { href: "/#about", label: "About" },
   ];
 
-  const userNavItems = user ? [] : navItems;
+  const userNavItems = user?.role === "admin" ? [
+    { href: "/admin", label: "Admin Dashboard" },
+    { href: "/tracking", label: "Tracking" },
+  ] : user ? [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/consignment", label: "Consignment" },
+    { href: "/tracking", label: "Tracking" },
+  ] : publicNavItems;
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-opacity-95" data-testid="navigation">
@@ -185,18 +192,20 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
                           <User className="h-4 w-4 mr-2" />
                           {user.firstName || user.email || 'Account'}
                         </Button>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => {
-                            setLocation("/admin");
-                            setIsMenuOpen(false);
-                          }}
-                          data-testid="mobile-admin"
-                        >
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          Admin
-                        </Button>
+                        {(user as any)?.role === "admin" && (
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start"
+                            onClick={() => {
+                              setLocation("/admin");
+                              setIsMenuOpen(false);
+                            }}
+                            data-testid="mobile-admin"
+                          >
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            Admin
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           className="w-full justify-start"

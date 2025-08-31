@@ -1,26 +1,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Home, ArrowLeft, Search } from "lucide-react";
+import { ShieldX, Home, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 
-export default function NotFound() {
+export default function Forbidden() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background p-4" data-testid="not-found-page">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background p-4" data-testid="forbidden-page">
       <Card className="w-full max-w-lg mx-auto">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <MapPin className="h-16 w-16 text-muted-foreground" />
+            <ShieldX className="h-16 w-16 text-destructive" />
           </div>
-          <CardTitle className="text-3xl font-bold text-foreground">Page Not Found</CardTitle>
+          <CardTitle className="text-3xl font-bold text-foreground">Access Denied</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-muted-foreground text-lg">
-            The page you're looking for doesn't exist.
+            You don't have permission to access this page.
           </p>
           <p className="text-sm text-muted-foreground">
-            It might have been moved, deleted, or you entered the wrong URL.
+            If you believe this is an error, please contact your administrator or try logging in with the correct account.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
@@ -40,15 +40,6 @@ export default function NotFound() {
             >
               <Home className="h-4 w-4 mr-2" />
               Go Home
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => setLocation("/track")}
-              className="flex items-center"
-              data-testid="tracking-button"
-            >
-              <Search className="h-4 w-4 mr-2" />
-              Track Gold
             </Button>
           </div>
         </CardContent>
