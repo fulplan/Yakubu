@@ -58,7 +58,7 @@ export default function CustomerSupport() {
     defaultValues: {
       subject: "",
       description: "",
-      category: "",
+      category: "general",
       priority: "medium",
     },
   });
@@ -110,7 +110,20 @@ export default function CustomerSupport() {
     },
   });
 
-  const onSubmit = (data: SupportTicketData) => {
+  const onSubmit = async (data: SupportTicketData) => {
+    console.log("Form submitted with data:", data);
+    console.log("Form errors:", form.formState.errors);
+    
+    // Additional validation check
+    if (!data.subject || !data.description || !data.category) {
+      toast({
+        title: "Please fill in all required fields",
+        description: "Subject, Description, and Category are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createTicketMutation.mutate(data);
   };
 
