@@ -207,7 +207,7 @@ export default function SupportTicket() {
       
       <MobileBackNav 
         title="Support Ticket" 
-        backPath="/customer-support" 
+        backPath="/dashboard?tab=support" 
         subtitle={`Ticket #${ticket?.id?.slice(0, 8) || ''}`}
       />
       
@@ -221,7 +221,7 @@ export default function SupportTicket() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Back to Support
           </Button>
           <div className="flex-1">
             <h1 className="text-3xl font-bold">Support Ticket</h1>

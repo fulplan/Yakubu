@@ -981,6 +981,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/admin/support-tickets/:id/respond', isAdmin, async (req: any, res) => {
+    try {
+      const { message } = req.body;
+      const ticketId = req.params.id;
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+      
+      // Get the ticket first
+      const ticket = await storage.getSupportTicket(ticketId);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Save the response message
+      const chatMessage = await storage.saveChatMessage({
+        sessionId: ticket.chatSessionId,
+        ticketId: ticketId,
+        userId: req.user.id,
+        isCustomer: false,
+        message: message.trim(),
+        messageType: 'text',
+        attachmentUrls: [],
+      });
+      
+      // Update ticket last activity and status
+      await storage.updateTicketLastActivity(ticketId);
+      await storage.updateSupportTicket(ticketId, { 
+        status: 'open',
+        assignedTo: req.user.id
+      });
+      
+      // Create customer notification for admin response
+      const customerUser = await storage.getUserByEmail(ticket.customerEmail);
+      if (customerUser) {
+        await storage.createCustomerNotification({
+          userId: customerUser.id,
+          customerEmail: ticket.customerEmail,
+          consignmentId: null,
+          type: 'support_response',
+          title: 'Support Team Response',
+          message: `Support team responded to your ticket: ${ticket.subject}`,
+          notificationMethod: 'email',
+          metadata: { 
+            ticketId: ticketId,
+            messageId: chatMessage.id,
+            adminId: req.user.id
+          }
+        });
+      }
+      
+      res.status(201).json(chatMessage);
+    } catch (error) {
+      console.error("Error responding to ticket:", error);
+      res.status(500).json({ message: "Failed to respond to ticket" });
+    }
+  });
+
   app.get('/api/admin/support-tickets/status/:status', isAdmin, async (req, res) => {
     try {
       const tickets = await storage.getTicketsByStatus(req.params.status);
@@ -2148,6 +2207,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching ticket:", error);
       res.status(500).json({ message: "Failed to fetch ticket" });
+    }
+  });
+
+  // Send message to support ticket
+  app.post('/api/chat/ticket/:ticketId/message', async (req: any, res) => {
+    try {
+      const { message } = req.body;
+      const ticketId = req.params.ticketId;
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const ticket = await storage.getSupportTicket(ticketId);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      // Save the message
+      const chatMessage = await storage.saveChatMessage({
+        sessionId: ticket.chatSessionId,
+        ticketId: ticketId,
+        userId: req.user?.id || null,
+        isCustomer: true,
+        message: message.trim(),
+        messageType: 'text',
+        attachmentUrls: [],
+      });
+
+      // Update ticket last activity
+      await storage.updateTicketLastActivity(ticketId);
+      
+      // Create admin notification for customer responses
+      if (ticket.assignedTo) {
+        await storage.createAdminNotification({
+          adminId: ticket.assignedTo,
+          type: 'customer_response',
+          title: 'Customer Response',
+          message: `Customer replied to ticket: ${ticket.subject}`,
+          ticketId: ticketId,
+          priority: 'normal',
+          actionRequired: true,
+        });
+      } else {
+        // Create notification for all admins if ticket is not assigned
+        const admins = await storage.getAllUsers();
+        const adminUsers = admins.filter(user => user.role === 'admin');
+        
+        for (const admin of adminUsers) {
+          await storage.createAdminNotification({
+            adminId: admin.id,
+            type: 'customer_response',
+            title: 'Customer Response',
+            message: `Customer replied to ticket: ${ticket.subject}`,
+            ticketId: ticketId,
+            priority: 'normal',
+            actionRequired: true,
+          });
+        }
+      }
+
+      res.status(201).json(chatMessage);
+    } catch (error) {
+      console.error("Error sending ticket message:", error);
+      res.status(500).json({ message: "Failed to send message" });
     }
   });
 
