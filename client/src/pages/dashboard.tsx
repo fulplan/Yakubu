@@ -39,7 +39,10 @@ import {
   Clock as ClockIcon,
   MapPin,
   CreditCard,
-  MessageSquare
+  MessageSquare,
+  MessageCircle,
+  Eye,
+  Headphones
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -974,41 +977,96 @@ export default function Dashboard() {
 
           {/* Tracking Tab */}
           <TabsContent value="tracking" className="space-y-4 md:space-y-6" data-testid="tracking-content">
-            <Card>
-              <CardHeader>
-                <CardTitle>Track Your Consignments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+            {/* Mobile-optimized tracking */}
+            <div className="grid gap-4 md:gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg md:text-xl">
+                    <MapPin className="h-5 w-5 mr-2 text-primary" />
+                    Real-Time Tracking
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   {consignments.length > 0 ? (
-                    <div className="space-y-4">
-                      <p className="text-muted-foreground mb-4">Click on any consignment to view detailed tracking information.</p>
+                    <div className="space-y-3 md:space-y-4">
+                      <p className="text-sm text-muted-foreground">Monitor your gold consignments in real-time</p>
                       {consignments.map((consignment: any) => (
-                        <Card key={consignment.id} className="p-4 cursor-pointer hover:bg-muted transition-colors" 
-                              onClick={() => window.location.href = `/tracking/${consignment.consignmentNumber}`}
-                              data-testid={`tracking-item-${consignment.id}`}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-semibold">#{consignment.consignmentNumber}</h4>
-                              <p className="text-sm text-muted-foreground">{consignment.description}</p>
+                        <Card key={consignment.id} className="bg-muted/30 border-0" data-testid={`tracking-item-${consignment.id}`}>
+                          <CardContent className="p-3 md:p-4">
+                            <div className="space-y-3">
+                              {/* Header - Mobile responsive */}
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-semibold text-base">#{consignment.consignmentNumber}</h4>
+                                    <Badge 
+                                      variant={consignment.status === 'stored' ? 'default' : 
+                                              consignment.status === 'in_transit' ? 'secondary' : 
+                                              consignment.status === 'verified' ? 'outline' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {consignment.status.replace('_', ' ').toUpperCase()}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground break-words">{consignment.description}</p>
+                                </div>
+                                <div className="flex flex-row sm:flex-col gap-2 sm:items-end">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="text-xs" 
+                                    onClick={() => setSelectedConsignment(consignment)}
+                                    data-testid={`track-details-${consignment.id}`}
+                                  >
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    Details
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Progress indicator */}
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                  <span>Progress</span>
+                                  <span>{Math.round((Object.keys(consignment.events || {}).length / 5) * 100)}%</span>
+                                </div>
+                                <div className="w-full bg-muted rounded-full h-2">
+                                  <div 
+                                    className="bg-primary h-2 rounded-full transition-all duration-300" 
+                                    style={{ width: `${Math.min(Math.round((Object.keys(consignment.events || {}).length / 5) * 100), 100)}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                              
+                              {/* Key metrics */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                <div className="bg-background p-2 rounded">
+                                  <p className="text-muted-foreground">Weight</p>
+                                  <p className="font-medium">{consignment.weight}g</p>
+                                </div>
+                                <div className="bg-background p-2 rounded">
+                                  <p className="text-muted-foreground">Purity</p>
+                                  <p className="font-medium">{consignment.purity}%</p>
+                                </div>
+                                <div className="bg-background p-2 rounded">
+                                  <p className="text-muted-foreground">Location</p>
+                                  <p className="font-medium">Vault {consignment.vaultLocation || 'A1'}</p>
+                                </div>
+                                <div className="bg-background p-2 rounded">
+                                  <p className="text-muted-foreground">Last Update</p>
+                                  <p className="font-medium">{new Date(consignment.updatedAt).toLocaleDateString()}</p>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <Badge variant={consignment.status === 'stored' ? 'default' : 'secondary'}>
-                                {consignment.status}
-                              </Badge>
-                              <Button variant="outline" size="sm" data-testid={`track-btn-${consignment.id}`}>
-                                Track Details
-                              </Button>
-                            </div>
-                          </div>
+                          </CardContent>
                         </Card>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12">
-                      <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <div className="text-center py-8 md:py-12">
+                      <Shield className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground mx-auto mb-4" />
                       <h4 className="text-lg font-semibold mb-2">No consignments to track</h4>
-                      <p className="text-muted-foreground mb-4">
+                      <p className="text-sm md:text-base text-muted-foreground mb-4">
                         Create your first consignment to start tracking.
                       </p>
                       <Button onClick={() => window.location.href = "/consignment"} data-testid="button-create-first-tracking">
@@ -1017,9 +1075,43 @@ export default function Dashboard() {
                       </Button>
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+              
+              {/* Live Support Chat */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <MessageCircle className="h-5 w-5 mr-2 text-primary" />
+                    Need Help? Live Support
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Get instant help with your consignments and tracking questions</p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button 
+                        className="flex-1" 
+                        onClick={() => setActiveTab('claims')}
+                        data-testid="button-create-support-ticket"
+                      >
+                        <Headphones className="h-4 w-4 mr-2" />
+                        Start Live Chat
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => setActiveTab('notifications')}
+                        data-testid="button-view-updates"
+                      >
+                        <Bell className="h-4 w-4 mr-2" />
+                        View Updates
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Inheritance Tab */}
@@ -1267,38 +1359,43 @@ export default function Dashboard() {
                 {notifications.length > 0 ? (
                   <div className="space-y-3">
                     {notifications.map((notification: any) => (
-                      <div key={notification.id} className="p-4 bg-muted rounded-lg" data-testid={`notification-${notification.id}`}>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${notification.readAt ? 'bg-gray-400' : 'bg-blue-500'}`}></div>
-                              <span className="font-medium">{notification.title}</span>
-                              {notification.type === 'claim_response' && (
-                                <Badge variant="outline" className="text-xs">
-                                  <MessageSquare className="h-3 w-3 mr-1" />
-                                  Admin Response
-                                </Badge>
-                              )}
-                              {notification.priority === 'urgent' && (
-                                <Badge variant="destructive" className="text-xs">Urgent</Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
-                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                              <span>{new Date(notification.createdAt).toLocaleDateString()}</span>
-                              <span>{new Date(notification.createdAt).toLocaleTimeString()}</span>
-                              {notification.readAt && <span>Read</span>}
+                      <div key={notification.id} className="p-3 md:p-4 bg-muted rounded-lg" data-testid={`notification-${notification.id}`}>
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-2 flex-wrap">
+                              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${notification.readAt ? 'bg-gray-400' : 'bg-blue-500'}`}></div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <span className="font-medium text-sm md:text-base break-words">{notification.title}</span>
+                                  {notification.type === 'claim_response' && (
+                                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                                      <MessageSquare className="h-3 w-3 mr-1" />
+                                      Admin Response
+                                    </Badge>
+                                  )}
+                                  {notification.priority === 'urgent' && (
+                                    <Badge variant="destructive" className="text-xs flex-shrink-0">Urgent</Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1 break-words">{notification.message}</p>
+                                <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-2 text-xs text-muted-foreground">
+                                  <span>{new Date(notification.createdAt).toLocaleDateString()}</span>
+                                  <span>{new Date(notification.createdAt).toLocaleTimeString()}</span>
+                                  {notification.readAt && <span>Read</span>}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-row md:flex-col gap-2 flex-shrink-0">
                             {notification.type === 'claim_response' && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setSelectedNotification(notification)}
                                 data-testid={`button-respond-${notification.id}`}
+                                className="text-xs md:text-sm"
                               >
-                                <MessageSquare className="h-4 w-4 mr-1" />
+                                <MessageSquare className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                                 Respond
                               </Button>
                             )}
@@ -1323,6 +1420,7 @@ export default function Dashboard() {
                                   }
                                 }}
                                 data-testid={`button-mark-read-${notification.id}`}
+                                className="text-xs md:text-sm"
                               >
                                 Mark as Read
                               </Button>
@@ -1795,8 +1893,8 @@ export default function Dashboard() {
 
       {/* Enhanced Notification Response Modal with Conversation History */}
       {selectedNotification && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] md:max-h-[80vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">

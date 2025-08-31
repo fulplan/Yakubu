@@ -826,6 +826,27 @@ export default function Admin() {
     refetchInterval: 30000, // Refresh every 30 seconds
   }) as { data: any[], isLoading: boolean };
 
+  // Filter claims based on admin selection
+  const filteredClaims = allClaims.filter((claim: any) => {
+    switch (claimFilter) {
+      case 'pending':
+        return claim.status === 'pending';
+      case 'under_review':
+        return claim.status === 'under_review';
+      case 'high_priority':
+        return claim.priority === 'high';
+      case 'inheritance':
+        return claim.claimType === 'inheritance';
+      case 'ownership_dispute':
+        return claim.claimType === 'ownership_dispute';
+      case 'withdrawal_request':
+        return claim.claimType === 'withdrawal_request';
+      case 'all':
+      default:
+        return true;
+    }
+  });
+
   // Enhanced claims mutations
   const assignClaimMutation = useMutation({
     mutationFn: async ({ id, adminId }: { id: string; adminId?: string }) => {
@@ -838,6 +859,8 @@ export default function Admin() {
         description: "Claim has been assigned successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/claims"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-claims"] });
+      // Keep the claim selected after assignment for continued management
     },
     onError: (error: any) => {
       toast({
@@ -855,11 +878,22 @@ export default function Admin() {
     },
     onSuccess: () => {
       toast({
-        title: "Communication Added",
-        description: "Communication has been added to the claim.",
+        title: "Communication Sent",
+        description: "Your message has been sent to the customer.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/claims"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
       setCommunicationMessage("");
+      // Refresh the selected claim to show updated communication
+      if (selectedClaim) {
+        setSelectedClaim({...selectedClaim, communicationLog: [...(selectedClaim.communicationLog || []), {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          message: communicationMessage,
+          fromAdmin: true,
+          adminId: user?.id
+        }]});
+      }
     },
     onError: (error: any) => {
       toast({
@@ -1548,14 +1582,14 @@ export default function Admin() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {claimsLoading ? (
+                  {allClaimsLoading ? (
                     <div className="text-center py-8">
                       <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                       <p className="text-muted-foreground">Loading claims...</p>
                     </div>
-                  ) : pendingClaims.length > 0 ? (
+                  ) : filteredClaims.length > 0 ? (
                     <div className="space-y-4">
-                      {pendingClaims.map((claim: any) => (
+                      {filteredClaims.map((claim: any) => (
                         <Card 
                           key={claim.id} 
                           className={`p-4 cursor-pointer transition-colors ${selectedClaim?.id === claim.id ? 'bg-primary/5 border-primary' : 'hover:bg-muted'}`}
