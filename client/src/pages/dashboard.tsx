@@ -145,15 +145,17 @@ export default function Dashboard() {
   });
 
   // Fetch user inheritance claims
-  const { data: userClaims = [] } = useQuery({
+  const { data: userClaims = [], error: claimsError } = useQuery({
     queryKey: ["/api/claims/mine"],
-    enabled: !!user,
+    enabled: !!user && !!isAuthenticated,
+    retry: false,
   });
 
   // Fetch ownership change requests
-  const { data: ownershipRequests = [] } = useQuery({
+  const { data: ownershipRequests = [], error: ownershipError } = useQuery({
     queryKey: ["/api/ownership-change-requests/mine"],
-    enabled: !!user,
+    enabled: !!user && !!isAuthenticated,
+    retry: false,
   });
 
   // Fetch notification count and summary
