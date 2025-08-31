@@ -2211,11 +2211,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/support/tickets/:id', async (req, res) => {
+  app.get('/api/support/tickets/:id', isAuthenticated, async (req: any, res) => {
     try {
       const ticket = await storage.getSupportTicket(req.params.id);
       if (!ticket) {
         return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Ensure customer can only access their own tickets (unless they're admin)
+      if (req.user.role !== 'admin' && ticket.customerEmail !== req.user.email) {
+        return res.status(403).json({ message: "Access denied" });
       }
       
       // Get chat messages if any
@@ -2229,7 +2234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send message to support ticket
-  app.post('/api/chat/ticket/:ticketId/message', async (req: any, res) => {
+  app.post('/api/chat/ticket/:ticketId/message', isAuthenticated, async (req: any, res) => {
     try {
       const { message } = req.body;
       const ticketId = req.params.ticketId;
