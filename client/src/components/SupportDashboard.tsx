@@ -72,7 +72,7 @@ export default function SupportDashboard() {
   const [newMessage, setNewMessage] = useState("");
 
   const { data: tickets = [], isLoading, error } = useQuery<SupportTicket[]>({
-    queryKey: ["/api/support/tickets/mine"],
+    queryKey: ["/api/support-tickets/mine"],
   });
 
   const { data: ticketDetails } = useQuery<SupportTicket & { messages?: ChatMessage[] }>({
@@ -99,12 +99,13 @@ export default function SupportDashboard() {
 
   if (showNewTicketForm) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="mb-6">
+      <div className="w-full">
+        <div className="mb-4 sm:mb-6">
           <Button 
             variant="outline" 
             onClick={() => setShowNewTicketForm(false)}
             data-testid="button-back-to-dashboard"
+            className="w-full sm:w-auto"
           >
             ← Back to Support Dashboard
           </Button>
@@ -117,43 +118,44 @@ export default function SupportDashboard() {
   if (selectedTicket) {
     const messages = ticketDetails?.messages || [];
     return (
-      <div className="container mx-auto py-8">
-        <div className="mb-6">
+      <div className="w-full">
+        <div className="mb-4 sm:mb-6">
           <Button 
             variant="outline" 
             onClick={() => setSelectedTicket(null)}
             data-testid="button-back-to-tickets"
+            className="w-full sm:w-auto"
           >
             ← Back to All Tickets
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Ticket Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             <Card data-testid="ticket-details-card">
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="flex items-center space-x-2">
-                      <span>#{selectedTicket.ticketNumber}</span>
-                      <Badge className={statusConfig[selectedTicket.status].color}>
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-sm sm:text-base">#{selectedTicket.ticketNumber}</span>
+                      <Badge className={`${statusConfig[selectedTicket.status].color} w-fit`}>
                         {getStatusIcon(selectedTicket.status)}
-                        <span className="ml-1">{statusConfig[selectedTicket.status].label}</span>
+                        <span className="ml-1 text-xs sm:text-sm">{statusConfig[selectedTicket.status].label}</span>
                       </Badge>
                     </CardTitle>
-                    <p className="text-lg font-medium mt-2">{selectedTicket.subject}</p>
+                    <p className="text-base sm:text-lg font-medium mt-2 leading-tight">{selectedTicket.subject}</p>
                   </div>
-                  <Badge className={priorityConfig[selectedTicket.priority].color}>
-                    {selectedTicket.priority.toUpperCase()}
+                  <Badge className={`${priorityConfig[selectedTicket.priority].color} w-fit flex-shrink-0`}>
+                    <span className="text-xs">{selectedTicket.priority.toUpperCase()}</span>
                   </Badge>
                 </div>
               </CardHeader>
               
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4">
                 <div>
-                  <h4 className="font-medium mb-2">Description</h4>
-                  <p className="text-muted-foreground whitespace-pre-wrap">
+                  <h4 className="font-medium mb-2 text-sm sm:text-base">Description</h4>
+                  <p className="text-muted-foreground whitespace-pre-wrap text-sm sm:text-base leading-relaxed">
                     {selectedTicket.description}
                   </p>
                 </div>
@@ -177,9 +179,9 @@ export default function SupportDashboard() {
               </CardHeader>
               
               <CardContent>
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className="space-y-3 sm:space-y-4 max-h-80 sm:max-h-96 overflow-y-auto">
                   {messages.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
+                    <p className="text-muted-foreground text-center py-6 sm:py-8 text-sm sm:text-base">
                       No messages yet. Start the conversation below.
                     </p>
                   ) : (
@@ -189,13 +191,13 @@ export default function SupportDashboard() {
                         className={`flex ${message.isCustomer ? 'justify-end' : 'justify-start'}`}
                       >
                         <div 
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 rounded-lg ${
                             message.isCustomer 
                               ? 'bg-primary text-primary-foreground' 
                               : 'bg-muted text-foreground'
                           }`}
                         >
-                          <p className="text-sm">{message.message}</p>
+                          <p className="text-sm break-words">{message.message}</p>
                           <p className="text-xs opacity-70 mt-1">
                             {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                           </p>
@@ -206,19 +208,20 @@ export default function SupportDashboard() {
                 </div>
                 
                 {selectedTicket.status !== 'closed' && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex space-x-2">
+                  <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2 sm:gap-0">
                       <Textarea
                         placeholder="Type your message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        className="flex-1"
+                        className="flex-1 min-h-[80px] sm:min-h-[60px]"
                         rows={3}
                         data-testid="textarea-new-message"
                       />
                       <Button 
                         disabled={!newMessage.trim()}
                         data-testid="button-send-message"
+                        className="w-full sm:w-auto"
                       >
                         Send
                       </Button>
@@ -285,16 +288,16 @@ export default function SupportDashboard() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <div className="w-full px-4 sm:px-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">Support Center</h1>
-          <p className="text-muted-foreground">Manage your support tickets and get help</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Support Center</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Manage your support tickets and get help</p>
         </div>
         <Button 
           onClick={() => setShowNewTicketForm(true)} 
           data-testid="button-new-ticket"
-          className="w-full sm:w-auto mobile-optimized"
+          className="w-full sm:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Ticket
@@ -302,14 +305,14 @@ export default function SupportDashboard() {
       </div>
 
       {/* Search */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search tickets by subject, number, or category..."
+            placeholder="Search tickets..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-sm sm:text-base"
             data-testid="input-search-tickets"
           />
         </div>
@@ -317,25 +320,25 @@ export default function SupportDashboard() {
 
       {/* Tickets List */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList>
-          <TabsTrigger value="all">All Tickets</TabsTrigger>
-          <TabsTrigger value="open">Open</TabsTrigger>
-          <TabsTrigger value="resolved">Resolved</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all" className="text-xs sm:text-sm">All Tickets</TabsTrigger>
+          <TabsTrigger value="open" className="text-xs sm:text-sm">Open</TabsTrigger>
+          <TabsTrigger value="resolved" className="text-xs sm:text-sm">Resolved</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="all" className="space-y-4">
+        <TabsContent value="all" className="space-y-3 sm:space-y-4">
           {isLoading ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Loading your tickets...</p>
+            <div className="text-center py-6 sm:py-8">
+              <p className="text-muted-foreground text-sm sm:text-base">Loading your tickets...</p>
             </div>
           ) : filteredTickets.length === 0 ? (
             <Card>
-              <CardContent className="text-center py-8">
-                <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">
+              <CardContent className="text-center py-6 sm:py-8">
+                <Ticket className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+                <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
                   {searchTerm ? "No tickets match your search." : "You haven't created any support tickets yet."}
                 </p>
-                <Button onClick={() => setShowNewTicketForm(true)}>
+                <Button onClick={() => setShowNewTicketForm(true)} className="w-full sm:w-auto">
                   Create Your First Ticket
                 </Button>
               </CardContent>
@@ -344,37 +347,39 @@ export default function SupportDashboard() {
             filteredTickets.map((ticket: SupportTicket) => (
               <Card 
                 key={ticket.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className="cursor-pointer hover:shadow-md transition-shadow active:scale-95"
                 onClick={() => setSelectedTicket(ticket)}
                 data-testid={`ticket-card-${ticket.id}`}
               >
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <p className="font-medium">#{ticket.ticketNumber}</p>
-                        <Badge className={statusConfig[ticket.status].color}>
-                          {getStatusIcon(ticket.status)}
-                          <span className="ml-1">{statusConfig[ticket.status].label}</span>
-                        </Badge>
-                        <Badge variant="outline" className={priorityConfig[ticket.priority].color}>
-                          {ticket.priority.toUpperCase()}
-                        </Badge>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:space-x-3 mb-2">
+                        <p className="font-medium text-sm sm:text-base">#{ticket.ticketNumber}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge className={`${statusConfig[ticket.status].color} text-xs`}>
+                            {getStatusIcon(ticket.status)}
+                            <span className="ml-1">{statusConfig[ticket.status].label}</span>
+                          </Badge>
+                          <Badge variant="outline" className={`${priorityConfig[ticket.priority].color} text-xs`}>
+                            {ticket.priority.toUpperCase()}
+                          </Badge>
+                        </div>
                       </div>
                       
-                      <h3 className="font-semibold text-lg mb-2">{ticket.subject}</h3>
-                      <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                      <h3 className="font-semibold text-base sm:text-lg mb-2 leading-tight">{ticket.subject}</h3>
+                      <p className="text-muted-foreground text-xs sm:text-sm mb-3 line-clamp-2 leading-relaxed">
                         {ticket.description}
                       </p>
                       
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
                         <span className="flex items-center space-x-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>Created {formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}</span>
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">Created {formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}</span>
                         </span>
                         <span className="flex items-center space-x-1">
-                          <Clock className="h-3 w-3" />
-                          <span>Updated {formatDistanceToNow(new Date(ticket.lastActivity), { addSuffix: true })}</span>
+                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">Updated {formatDistanceToNow(new Date(ticket.lastActivity), { addSuffix: true })}</span>
                         </span>
                       </div>
                     </div>

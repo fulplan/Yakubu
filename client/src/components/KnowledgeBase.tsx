@@ -146,12 +146,12 @@ export default function KnowledgeBase() {
     const article = articleDetails || selectedArticle;
     
     return (
-      <div className="container mx-auto py-8 max-w-4xl">
-        <div className="mb-6">
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
+        <div className="mb-4 sm:mb-6">
           <Button 
             variant="outline" 
             onClick={() => setSelectedArticle(null)}
-            className="mb-4"
+            className="w-full sm:w-auto mb-4"
             data-testid="button-back-to-articles"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -162,26 +162,26 @@ export default function KnowledgeBase() {
         <Card data-testid="article-detail-card">
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <Badge variant="outline" className="mb-3">
+              <div className="flex-1 min-w-0">
+                <Badge variant="outline" className="mb-3 text-xs">
                   {categories.find(cat => cat.value === article.category)?.label || article.category}
                 </Badge>
-                <CardTitle className="text-2xl mb-3">{article.title}</CardTitle>
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                <CardTitle className="text-xl sm:text-2xl mb-3 leading-tight">{article.title}</CardTitle>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
                   <span className="flex items-center space-x-1">
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>{article.viewCount} views</span>
                   </span>
-                  <span>•</span>
+                  <span className="hidden sm:inline">•</span>
                   <span>Last updated {new Date(article.updatedAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
           </CardHeader>
           
-          <CardContent className="prose prose-sm max-w-none">
+          <CardContent className="prose prose-sm max-w-none px-4 sm:px-6">
             <div 
-              className="whitespace-pre-wrap text-foreground leading-relaxed"
+              className="whitespace-pre-wrap text-foreground leading-relaxed text-sm sm:text-base"
               dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br>') }}
             />
           </CardContent>
@@ -189,10 +189,10 @@ export default function KnowledgeBase() {
           <Separator className="my-6" />
 
           {/* Article feedback */}
-          <CardContent>
-            <div className="bg-muted/50 rounded-lg p-6">
-              <h3 className="font-semibold mb-3">Was this article helpful?</h3>
-              <div className="flex items-center space-x-4">
+          <CardContent className="px-4 sm:px-6">
+            <div className="bg-muted/50 rounded-lg p-4 sm:p-6">
+              <h3 className="font-semibold mb-3 text-sm sm:text-base">Was this article helpful?</h3>
+              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-4 sm:gap-0">
                 <Button
                   variant="outline"
                   size="sm"
@@ -228,10 +228,10 @@ export default function KnowledgeBase() {
 
   // Main knowledge base view
   return (
-    <div className="container mx-auto py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-3">Help Center</h1>
-        <p className="text-muted-foreground mb-6">
+    <div className="w-full px-4 sm:px-0">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">Help Center</h1>
+        <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base">
           Find answers to your questions and learn how to make the most of our platform
         </p>
         
@@ -239,10 +239,10 @@ export default function KnowledgeBase() {
         <div className="max-w-md mx-auto relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search for help articles..."
+            placeholder="Search articles..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-sm sm:text-base"
             data-testid="input-search-articles"
           />
         </div>
@@ -250,13 +250,13 @@ export default function KnowledgeBase() {
 
       {/* Categories */}
       {!searchTerm && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {categories.map((category) => {
             const Icon = category.icon;
             return (
               <Card
                 key={category.value}
-                className={`cursor-pointer hover:shadow-md transition-shadow ${
+                className={`cursor-pointer hover:shadow-md transition-shadow active:scale-95 ${
                   selectedCategory === category.value ? 'ring-2 ring-primary' : ''
                 }`}
                 onClick={() => setSelectedCategory(
@@ -264,18 +264,18 @@ export default function KnowledgeBase() {
                 )}
                 data-testid={`category-card-${category.value}`}
               >
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Icon className="h-5 w-5 text-primary" />
+                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{category.label}</h3>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold mb-1 text-sm sm:text-base">{category.label}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-tight">
                         {category.description}
                       </p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
@@ -285,16 +285,16 @@ export default function KnowledgeBase() {
       )}
 
       {/* Articles */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {isLoading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading articles...</p>
+          <div className="text-center py-6 sm:py-8">
+            <p className="text-muted-foreground text-sm sm:text-base">Loading articles...</p>
           </div>
         ) : filteredArticles.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-8">
-              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">
+            <CardContent className="text-center py-6 sm:py-8">
+              <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+              <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
                 {searchTerm 
                   ? "No articles match your search. Try different keywords." 
                   : selectedCategory
@@ -309,6 +309,7 @@ export default function KnowledgeBase() {
                     setSearchTerm("");
                     setSelectedCategory(null);
                   }}
+                  className="w-full sm:w-auto"
                 >
                   View All Articles
                 </Button>
@@ -318,8 +319,8 @@ export default function KnowledgeBase() {
         ) : (
           <>
             {(searchTerm || selectedCategory) && (
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {searchTerm && `Search results for "${searchTerm}"`}
                   {selectedCategory && `Articles in ${categories.find(c => c.value === selectedCategory)?.label}`}
                   {" "}({filteredArticles.length} articles)
@@ -331,6 +332,7 @@ export default function KnowledgeBase() {
                     setSearchTerm("");
                     setSelectedCategory(null);
                   }}
+                  className="w-full sm:w-auto"
                 >
                   Clear filters
                 </Button>
@@ -340,23 +342,23 @@ export default function KnowledgeBase() {
             {filteredArticles.map((article: KnowledgeBaseArticle) => (
               <Card
                 key={article.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className="cursor-pointer hover:shadow-md transition-shadow active:scale-95"
                 onClick={() => setSelectedArticle(article)}
                 data-testid={`article-card-${article.id}`}
               >
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="text-xs">
                           {categories.find(cat => cat.value === article.category)?.label || article.category}
                         </Badge>
                       </div>
                       
-                      <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">
+                      <h3 className="font-semibold text-base sm:text-lg mb-2 hover:text-primary transition-colors leading-tight">
                         {article.title}
                       </h3>
-                      <p className="text-muted-foreground mb-3 line-clamp-2">
+                      <p className="text-muted-foreground mb-3 line-clamp-2 text-sm sm:text-base leading-relaxed">
                         {article.excerpt}
                       </p>
                       
