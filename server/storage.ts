@@ -44,7 +44,7 @@ import {
   type StoragePlan,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, or, isNull } from "drizzle-orm";
+import { eq, desc, and, sql, or, isNull, inArray } from "drizzle-orm";
 import crypto from "crypto";
 
 export interface IStorage {
@@ -494,26 +494,36 @@ export class DatabaseStorage implements IStorage {
 
   async getUserClaims(userId: string): Promise<InheritanceClaim[]> {
     // Get claims where user is the claimant (by email) or related to their will/consignment
-    const [userWills] = await db
+    const user = await this.getUser(userId);
+    if (!user) return [];
+    
+    // Build conditions using proper drizzle syntax
+    const conditions = [eq(inheritanceClaims.claimantEmail, user.email)];
+    
+    // Add will-related claims
+    const userWills = await db
       .select({ willId: digitalWills.id })
       .from(digitalWills)
       .where(eq(digitalWills.userId, userId));
     
+    if (userWills.length > 0) {
+      conditions.push(inArray(inheritanceClaims.willId, userWills.map(w => w.willId)));
+    }
+    
+    // Add consignment-related claims
     const userConsignments = await db
       .select({ consignmentId: consignments.id })
       .from(consignments)
       .where(eq(consignments.userId, userId));
-
-    const user = await this.getUser(userId);
+    
+    if (userConsignments.length > 0) {
+      conditions.push(inArray(inheritanceClaims.consignmentId, userConsignments.map(c => c.consignmentId)));
+    }
     
     return db
       .select()
       .from(inheritanceClaims)
-      .where(
-        sql`${inheritanceClaims.claimantEmail} = ${user?.email} 
-        OR ${inheritanceClaims.willId} = ${userWills?.willId}
-        OR ${inheritanceClaims.consignmentId} IN (${userConsignments.map(c => c.consignmentId).join(',')})`
-      )
+      .where(or(...conditions))
       .orderBy(desc(inheritanceClaims.createdAt));
   }
 

@@ -435,17 +435,18 @@ export default function Dashboard() {
   // Mobile Bottom Navigation Component
   const MobileBottomNav = () => (
     <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 md:hidden shadow-lg">
-      <div className="grid grid-cols-4 px-1 py-3 safe-area-inset-bottom">
+      <div className="grid grid-cols-5 px-1 py-3 safe-area-inset-bottom">
         {[
           { id: 'portfolio', icon: Home, label: 'Portfolio', shortLabel: 'Home' },
           { id: 'consignments', icon: Package, label: 'Consignments', shortLabel: 'Assets' },
           { id: 'inheritance', icon: Shield, label: 'Inheritance', shortLabel: 'Will' },
+          { id: 'claims', icon: FileText, label: 'Claims', shortLabel: 'Claims' },
           { id: 'notifications', icon: Bell, label: 'Notifications', shortLabel: 'Alerts', badge: notificationCount.count }
         ].map(({ id, icon: Icon, label, shortLabel, badge }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex flex-col items-center justify-center py-2 px-1 min-h-[64px] transition-all duration-200 rounded-lg mx-1 relative ${
+            className={`flex flex-col items-center justify-center py-1 px-0.5 min-h-[60px] transition-all duration-200 rounded-lg mx-0.5 relative ${
               activeTab === id 
                 ? 'text-primary bg-primary/10' 
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -453,13 +454,13 @@ export default function Dashboard() {
             data-testid={`bottom-nav-${id}`}
             aria-label={label}
           >
-            <Icon className={`h-6 w-6 mb-1 ${activeTab === id ? 'scale-110' : ''} transition-transform`} />
+            <Icon className={`h-5 w-5 mb-1 ${activeTab === id ? 'scale-110' : ''} transition-transform`} />
             {badge && badge > 0 && (
               <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 {badge > 99 ? '99+' : badge}
               </div>
             )}
-            <span className="text-[10px] font-medium leading-tight text-center max-w-[60px] truncate">
+            <span className="text-[9px] font-medium leading-tight text-center max-w-[50px] truncate">
               {shortLabel}
             </span>
           </button>
@@ -1021,7 +1022,7 @@ export default function Dashboard() {
 
           {/* Inheritance Tab */}
           <TabsContent value="inheritance" className="space-y-4 md:space-y-6" data-testid="inheritance-content">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
               {/* Will Builder */}
               <Card data-testid="will-builder">
                 <CardHeader>
@@ -1395,7 +1396,7 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <Button
                 onClick={() => setActiveTab('inheritance')}
                 variant="outline"
@@ -1596,7 +1597,7 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="consignment-select">Select Consignment</Label>
                     <Select 
@@ -1634,7 +1635,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="new-owner-name">New Owner Name</Label>
                     <Input
