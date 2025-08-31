@@ -256,6 +256,47 @@ export const storagePlans = pgTable("storage_plans", {
   active: boolean("active").default(true),
 });
 
+// Knowledge base articles table
+export const knowledgeBaseArticles = pgTable("knowledge_base_articles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt"),
+  category: varchar("category").notNull(), // general, billing, technical, consignment, inheritance
+  tags: text("tags").array(),
+  isPublished: boolean("is_published").default(true),
+  viewCount: integer("view_count").default(0),
+  helpfulVotes: integer("helpful_votes").default(0),
+  notHelpfulVotes: integer("not_helpful_votes").default(0),
+  authorId: varchar("author_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Knowledge base article votes table
+export const knowledgeBaseVotes = pgTable("knowledge_base_votes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  articleId: varchar("article_id").notNull().references(() => knowledgeBaseArticles.id),
+  userId: varchar("user_id").references(() => users.id),
+  sessionId: varchar("session_id"), // For anonymous users
+  isHelpful: boolean("is_helpful").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Customer support sessions table
+export const supportSessions = pgTable("support_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => users.id),
+  customerEmail: varchar("customer_email"),
+  customerName: varchar("customer_name"),
+  status: varchar("status").notNull().default("active"), // active, ended, transferred
+  assignedTo: varchar("assigned_to").references(() => users.id), // admin assigned
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+  ticketId: varchar("ticket_id").references(() => supportTickets.id), // if escalated to ticket
+  metadata: jsonb("metadata"), // browser info, page context, etc.
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   consignments: many(consignments),
@@ -380,6 +421,41 @@ export const customerNotificationsRelations = relations(customerNotifications, (
   }),
 }));
 
+export const knowledgeBaseArticlesRelations = relations(knowledgeBaseArticles, ({ one, many }) => ({
+  author: one(users, {
+    fields: [knowledgeBaseArticles.authorId],
+    references: [users.id],
+  }),
+  votes: many(knowledgeBaseVotes),
+}));
+
+export const knowledgeBaseVotesRelations = relations(knowledgeBaseVotes, ({ one }) => ({
+  article: one(knowledgeBaseArticles, {
+    fields: [knowledgeBaseVotes.articleId],
+    references: [knowledgeBaseArticles.id],
+  }),
+  user: one(users, {
+    fields: [knowledgeBaseVotes.userId],
+    references: [users.id],
+  }),
+}));
+
+export const supportSessionsRelations = relations(supportSessions, ({ one, many }) => ({
+  customer: one(users, {
+    fields: [supportSessions.customerId],
+    references: [users.id],
+  }),
+  assignedAdmin: one(users, {
+    fields: [supportSessions.assignedTo],
+    references: [users.id],
+  }),
+  ticket: one(supportTickets, {
+    fields: [supportSessions.ticketId],
+    references: [supportTickets.id],
+  }),
+  chatMessages: many(chatMessages),
+}));
+
 // Zod schemas
 export const insertConsignmentSchema = createInsertSchema(consignments).omit({
   id: true,
@@ -492,6 +568,26 @@ export const insertGoldHoldingSchema = createInsertSchema(goldHoldings).omit({
   createdAt: true,
 });
 
+export const insertKnowledgeBaseArticleSchema = createInsertSchema(knowledgeBaseArticles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  viewCount: true,
+  helpfulVotes: true,
+  notHelpfulVotes: true,
+});
+
+export const insertKnowledgeBaseVoteSchema = createInsertSchema(knowledgeBaseVotes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSupportSessionSchema = createInsertSchema(supportSessions).omit({
+  id: true,
+  startedAt: true,
+  endedAt: true,
+});
+
 export type InsertGoldHolding = z.infer<typeof insertGoldHoldingSchema>;
 export type GoldHolding = typeof goldHoldings.$inferSelect;
 
@@ -505,3 +601,12 @@ export type ScheduledUpdate = typeof scheduledUpdates.$inferSelect;
 
 export type InsertCustomerNotification = z.infer<typeof insertCustomerNotificationSchema>;
 export type CustomerNotification = typeof customerNotifications.$inferSelect;
+
+export type InsertKnowledgeBaseArticle = z.infer<typeof insertKnowledgeBaseArticleSchema>;
+export type KnowledgeBaseArticle = typeof knowledgeBaseArticles.$inferSelect;
+
+export type InsertKnowledgeBaseVote = z.infer<typeof insertKnowledgeBaseVoteSchema>;
+export type KnowledgeBaseVote = typeof knowledgeBaseVotes.$inferSelect;
+
+export type InsertSupportSession = z.infer<typeof insertSupportSessionSchema>;
+export type SupportSession = typeof supportSessions.$inferSelect;

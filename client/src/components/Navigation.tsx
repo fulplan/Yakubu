@@ -38,6 +38,7 @@ export default function Navigation({ goldPrice, onLogin, onRegister, user }: Nav
   ] : user ? [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/consignment", label: "Consignment" },
+    { href: "/support", label: "Support" },
     { href: "/tracking", label: "Tracking" },
   ] : publicNavItems;
 

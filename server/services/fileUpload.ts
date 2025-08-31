@@ -10,7 +10,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Create subdirectories for different file types
-const subDirs = ['documents', 'certificates', 'qr-codes', 'invoices', 'reports'];
+const subDirs = ['documents', 'certificates', 'qr-codes', 'invoices', 'reports', 'support'];
 subDirs.forEach(dir => {
   const dirPath = path.join(uploadDir, dir);
   if (!fs.existsSync(dirPath)) {
@@ -28,6 +28,8 @@ const storage = multer.diskStorage({
       uploadPath = path.join(uploadDir, 'certificates');
     } else if (req.path.includes('claims')) {
       uploadPath = path.join(uploadDir, 'documents');
+    } else if (req.path.includes('support')) {
+      uploadPath = path.join(uploadDir, 'support');
     }
     
     cb(null, uploadPath);

@@ -15,6 +15,7 @@ import Tracking from "@/pages/tracking";
 import TrackingPortal from "@/pages/track";
 import Dashboard from "@/pages/dashboard";
 import Admin from "@/pages/admin";
+import Support from "@/pages/Support";
 import AuthPage from "@/pages/auth-page";
 
 function ProtectedRoute({ children, requiredRole = null }: { children: React.ReactNode; requiredRole?: string | null }) {
@@ -98,6 +99,13 @@ function Router() {
         {() => (
           <ProtectedRoute>
             <Consignment />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/support">
+        {() => (
+          <ProtectedRoute>
+            <Support />
           </ProtectedRoute>
         )}
       </Route>

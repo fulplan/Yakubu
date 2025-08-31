@@ -14,6 +14,9 @@ import {
   accountTransactions,
   goldHoldings,
   storagePlans,
+  knowledgeBaseArticles,
+  knowledgeBaseVotes,
+  supportSessions,
   type User,
   type UpsertUser,
   type Consignment,
@@ -42,6 +45,12 @@ import {
   type GoldHolding,
   type InsertGoldHolding,
   type StoragePlan,
+  type KnowledgeBaseArticle,
+  type InsertKnowledgeBaseArticle,
+  type KnowledgeBaseVote,
+  type InsertKnowledgeBaseVote,
+  type SupportSession,
+  type InsertSupportSession,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, or, isNull, inArray } from "drizzle-orm";
@@ -164,6 +173,24 @@ export interface IStorage {
   markCustomerNotificationAsRead(notificationId: string): Promise<void>;
   markAllNotificationsAsRead(userId: string): Promise<void>;
   respondToNotification(notificationId: string, userId: string, response: string, actionType?: string): Promise<void>;
+  
+  // Knowledge base operations
+  createKnowledgeBaseArticle(article: InsertKnowledgeBaseArticle): Promise<KnowledgeBaseArticle>;
+  getKnowledgeBaseArticles(category?: string): Promise<KnowledgeBaseArticle[]>;
+  getKnowledgeBaseArticle(id: string): Promise<KnowledgeBaseArticle | undefined>;
+  searchKnowledgeBase(searchTerm: string): Promise<KnowledgeBaseArticle[]>;
+  voteOnArticle(vote: InsertKnowledgeBaseVote): Promise<void>;
+  incrementArticleView(articleId: string): Promise<void>;
+  updateKnowledgeBaseArticle(id: string, updates: Partial<KnowledgeBaseArticle>): Promise<void>;
+  
+  // Support session operations
+  createSupportSession(session: InsertSupportSession): Promise<SupportSession>;
+  getSupportSession(id: string): Promise<SupportSession | undefined>;
+  getActiveSupportSessions(): Promise<SupportSession[]>;
+  getUserSupportSessions(userId: string): Promise<SupportSession[]>;
+  endSupportSession(sessionId: string): Promise<void>;
+  assignSessionToAdmin(sessionId: string, adminId: string): Promise<void>;
+  escalateSessionToTicket(sessionId: string, ticketData: InsertSupportTicket): Promise<SupportTicket>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1311,6 +1338,188 @@ export class DatabaseStorage implements IStorage {
         lastActivity: new Date()
       })
       .where(eq(supportTickets.id, ticketId));
+  }
+
+  // Knowledge base operations
+  async createKnowledgeBaseArticle(article: InsertKnowledgeBaseArticle): Promise<KnowledgeBaseArticle> {
+    try {
+      const [newArticle] = await db.insert(knowledgeBaseArticles).values(article).returning();
+      return newArticle;
+    } catch (error) {
+      console.error('Failed to create knowledge base article:', error);
+      throw error;
+    }
+  }
+
+  async getKnowledgeBaseArticles(category?: string): Promise<KnowledgeBaseArticle[]> {
+    try {
+      const query = db.select().from(knowledgeBaseArticles).where(eq(knowledgeBaseArticles.isPublished, true));
+      if (category) {
+        return await query.where(eq(knowledgeBaseArticles.category, category)).orderBy(desc(knowledgeBaseArticles.createdAt));
+      }
+      return await query.orderBy(desc(knowledgeBaseArticles.createdAt));
+    } catch (error) {
+      console.error('Failed to get knowledge base articles:', error);
+      throw error;
+    }
+  }
+
+  async getKnowledgeBaseArticle(id: string): Promise<KnowledgeBaseArticle | undefined> {
+    try {
+      const [article] = await db.select().from(knowledgeBaseArticles).where(eq(knowledgeBaseArticles.id, id));
+      return article;
+    } catch (error) {
+      console.error('Failed to get knowledge base article:', error);
+      throw error;
+    }
+  }
+
+  async searchKnowledgeBase(searchTerm: string): Promise<KnowledgeBaseArticle[]> {
+    try {
+      return await db.select().from(knowledgeBaseArticles)
+        .where(and(
+          eq(knowledgeBaseArticles.isPublished, true),
+          or(
+            sql`${knowledgeBaseArticles.title} ILIKE ${`%${searchTerm}%`}`,
+            sql`${knowledgeBaseArticles.content} ILIKE ${`%${searchTerm}%`}`,
+            sql`${knowledgeBaseArticles.excerpt} ILIKE ${`%${searchTerm}%`}`
+          )
+        ))
+        .orderBy(desc(knowledgeBaseArticles.createdAt));
+    } catch (error) {
+      console.error('Failed to search knowledge base:', error);
+      throw error;
+    }
+  }
+
+  async voteOnArticle(vote: InsertKnowledgeBaseVote): Promise<void> {
+    try {
+      await db.insert(knowledgeBaseVotes).values(vote);
+      
+      const votes = await db.select().from(knowledgeBaseVotes).where(eq(knowledgeBaseVotes.articleId, vote.articleId));
+      const helpfulCount = votes.filter(v => v.isHelpful).length;
+      const notHelpfulCount = votes.filter(v => !v.isHelpful).length;
+
+      await db.update(knowledgeBaseArticles)
+        .set({ 
+          helpfulVotes: helpfulCount,
+          notHelpfulVotes: notHelpfulCount
+        })
+        .where(eq(knowledgeBaseArticles.id, vote.articleId));
+    } catch (error) {
+      console.error('Failed to vote on article:', error);
+      throw error;
+    }
+  }
+
+  async incrementArticleView(articleId: string): Promise<void> {
+    try {
+      await db.update(knowledgeBaseArticles)
+        .set({ viewCount: sql`${knowledgeBaseArticles.viewCount} + 1` })
+        .where(eq(knowledgeBaseArticles.id, articleId));
+    } catch (error) {
+      console.error('Failed to increment article view:', error);
+      throw error;
+    }
+  }
+
+  async updateKnowledgeBaseArticle(id: string, updates: Partial<KnowledgeBaseArticle>): Promise<void> {
+    try {
+      await db.update(knowledgeBaseArticles)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(knowledgeBaseArticles.id, id));
+    } catch (error) {
+      console.error('Failed to update knowledge base article:', error);
+      throw error;
+    }
+  }
+
+  async createSupportSession(session: InsertSupportSession): Promise<SupportSession> {
+    try {
+      const [newSession] = await db.insert(supportSessions).values(session).returning();
+      return newSession;
+    } catch (error) {
+      console.error('Failed to create support session:', error);
+      throw error;
+    }
+  }
+
+  async getSupportSession(id: string): Promise<SupportSession | undefined> {
+    try {
+      const [session] = await db.select().from(supportSessions).where(eq(supportSessions.id, id));
+      return session;
+    } catch (error) {
+      console.error('Failed to get support session:', error);
+      throw error;
+    }
+  }
+
+  async getActiveSupportSessions(): Promise<SupportSession[]> {
+    try {
+      return await db.select().from(supportSessions)
+        .where(eq(supportSessions.status, 'active'))
+        .orderBy(desc(supportSessions.startedAt));
+    } catch (error) {
+      console.error('Failed to get active support sessions:', error);
+      throw error;
+    }
+  }
+
+  async getUserSupportSessions(userId: string): Promise<SupportSession[]> {
+    try {
+      return await db.select().from(supportSessions)
+        .where(eq(supportSessions.customerId, userId))
+        .orderBy(desc(supportSessions.startedAt));
+    } catch (error) {
+      console.error('Failed to get user support sessions:', error);
+      throw error;
+    }
+  }
+
+  async endSupportSession(sessionId: string): Promise<void> {
+    try {
+      await db.update(supportSessions)
+        .set({ 
+          status: 'ended', 
+          endedAt: new Date() 
+        })
+        .where(eq(supportSessions.id, sessionId));
+    } catch (error) {
+      console.error('Failed to end support session:', error);
+      throw error;
+    }
+  }
+
+  async assignSessionToAdmin(sessionId: string, adminId: string): Promise<void> {
+    try {
+      await db.update(supportSessions)
+        .set({ assignedTo: adminId })
+        .where(eq(supportSessions.id, sessionId));
+    } catch (error) {
+      console.error('Failed to assign session to admin:', error);
+      throw error;
+    }
+  }
+
+  async escalateSessionToTicket(sessionId: string, ticketData: InsertSupportTicket): Promise<SupportTicket> {
+    try {
+      const [ticket] = await db.insert(supportTickets).values({
+        ...ticketData,
+        chatSessionId: sessionId
+      }).returning();
+
+      await db.update(supportSessions)
+        .set({ 
+          ticketId: ticket.id,
+          status: 'transferred'
+        })
+        .where(eq(supportSessions.id, sessionId));
+
+      return ticket;
+    } catch (error) {
+      console.error('Failed to escalate session to ticket:', error);
+      throw error;
+    }
   }
 }
 

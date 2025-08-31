@@ -1649,40 +1649,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
-
-  const httpServer = createServer(app);
-  
-  // WebSocket server for real-time updates
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  const connectedClients = new Map<string, WebSocket>();
-  
-  wss.on('connection', (ws: WebSocket, req) => {
-    console.log('WebSocket client connected');
-    
-    ws.on('message', (message) => {
-      try {
-        const data = JSON.parse(message.toString());
-        if (data.type === 'authenticate' && data.userId) {
-          connectedClients.set(data.userId, ws);
-          console.log(`User ${data.userId} authenticated on WebSocket`);
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    });
-    
-    ws.on('close', () => {
-      // Remove client from connected clients
-      const entries = Array.from(connectedClients.entries());
-      for (const [userId, client] of entries) {
-        if (client === ws) {
-          connectedClients.delete(userId);
-          console.log(`User ${userId} disconnected from WebSocket`);
-          break;
-        }
-      }
-    });
-  });
   
   // Claims Processing System for Inheritance
   app.post('/api/claims/inheritance', async (req, res) => {
@@ -2058,9 +2024,314 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Store WebSocket server reference for use in routes
-  (app as any).wss = wss;
-  (app as any).connectedClients = connectedClients;
+  // Knowledge Base APIs
+  app.get('/api/knowledge-base', async (req, res) => {
+    try {
+      const { category, search } = req.query;
+      let articles;
+      
+      if (search) {
+        articles = await storage.searchKnowledgeBase(search as string);
+      } else {
+        articles = await storage.getKnowledgeBaseArticles(category as string);
+      }
+      
+      res.json(articles);
+    } catch (error) {
+      console.error("Error fetching knowledge base articles:", error);
+      res.status(500).json({ message: "Failed to fetch articles" });
+    }
+  });
+
+  app.get('/api/knowledge-base/:id', async (req, res) => {
+    try {
+      const article = await storage.getKnowledgeBaseArticle(req.params.id);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      // Increment view count
+      await storage.incrementArticleView(req.params.id);
+      
+      res.json(article);
+    } catch (error) {
+      console.error("Error fetching article:", error);
+      res.status(500).json({ message: "Failed to fetch article" });
+    }
+  });
+
+  app.post('/api/knowledge-base/:id/vote', async (req, res) => {
+    try {
+      const { isHelpful } = req.body;
+      const { id } = req.params;
+      
+      let userId = null;
+      let sessionId = null;
+      
+      if (req.user) {
+        userId = (req.user as any).id;
+      } else {
+        sessionId = req.sessionID;
+      }
+      
+      await storage.voteOnArticle({
+        articleId: id,
+        userId,
+        sessionId,
+        isHelpful
+      });
+      
+      res.json({ message: "Vote recorded successfully" });
+    } catch (error) {
+      console.error("Error voting on article:", error);
+      res.status(500).json({ message: "Failed to record vote" });
+    }
+  });
+
+  // Support Ticket APIs for customers
+  app.post('/api/support/tickets', async (req: any, res) => {
+    try {
+      const ticketData = {
+        ...req.body,
+        customerId: req.user?.id,
+        customerEmail: req.user?.email || req.body.customerEmail,
+        customerName: req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : req.body.customerName,
+      };
+      
+      const ticket = await storage.createSupportTicket(ticketData);
+      
+      // Create admin notification for new ticket
+      const admins = await storage.getAllUsers();
+      const adminUsers = admins.filter(user => user.role === 'admin');
+      
+      for (const admin of adminUsers) {
+        await storage.createAdminNotification({
+          adminId: admin.id,
+          type: 'new_ticket',
+          title: 'New Support Ticket',
+          message: `New ticket created: ${ticket.subject}`,
+          ticketId: ticket.id,
+          priority: ticket.priority === 'urgent' ? 'urgent' : 'normal',
+          actionRequired: true
+        });
+      }
+      
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Error creating support ticket:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create ticket" });
+    }
+  });
+
+  app.get('/api/support/tickets/mine', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const tickets = await storage.getUserSupportTickets(req.user.email);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching user tickets:", error);
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  app.get('/api/support/tickets/:id', async (req, res) => {
+    try {
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Get chat messages if any
+      const messages = await storage.getChatMessagesByTicket(req.params.id);
+      
+      res.json({ ...ticket, messages });
+    } catch (error) {
+      console.error("Error fetching ticket:", error);
+      res.status(500).json({ message: "Failed to fetch ticket" });
+    }
+  });
+
+  app.post('/api/support/tickets/:id/messages', async (req: any, res) => {
+    try {
+      const { message } = req.body;
+      const ticketId = req.params.id;
+      
+      const chatMessage = await storage.saveChatMessage({
+        sessionId: `ticket-${ticketId}`,
+        ticketId,
+        userId: req.user?.id,
+        isCustomer: req.user?.role !== 'admin',
+        message,
+        messageType: 'text'
+      });
+      
+      // Update ticket last activity
+      await storage.updateTicketLastActivity(ticketId);
+      
+      res.status(201).json(chatMessage);
+    } catch (error) {
+      console.error("Error adding ticket message:", error);
+      res.status(400).json({ message: "Failed to add message" });
+    }
+  });
+
+  // Support Session APIs
+  app.post('/api/support/sessions', async (req: any, res) => {
+    try {
+      const sessionData = {
+        ...req.body,
+        customerId: req.user?.id,
+        customerEmail: req.user?.email || req.body.customerEmail,
+        customerName: req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : req.body.customerName,
+      };
+      
+      const session = await storage.createSupportSession(sessionData);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Error creating support session:", error);
+      res.status(400).json({ message: "Failed to create session" });
+    }
+  });
+
+  app.get('/api/support/sessions/mine', isAuthenticated, async (req: any, res) => {
+    try {
+      const sessions = await storage.getUserSupportSessions(req.user.id);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching user sessions:", error);
+      res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
+  // Support file upload endpoint
+  app.post("/api/support/upload", isAuthenticated, uploadMiddleware.single('attachment'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      res.json({
+        success: true,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        path: req.file.path,
+        url: `/uploads/support/${req.file.filename}`
+      });
+    } catch (error) {
+      console.error("Support upload error:", error);
+      res.status(500).json({ error: "File upload failed" });
+    }
+  });
+
+  // Create HTTP server and enhance existing WebSocket server
+  const httpServer = createServer(app);
+  
+  // Check if WebSocket server exists, if not create it
+  let wss = (app as any).wss;
+  if (!wss) {
+    wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+    (app as any).wss = wss;
+  }
+
+  // Store active connections
+  const activeConnections = new Map<string, { ws: WebSocket, userId?: string, sessionId?: string, isAdmin: boolean }>();
+
+  // WebSocket connection handler
+  wss.on('connection', (ws: WebSocket, request) => {
+    console.log('New WebSocket connection established');
+    const connectionId = crypto.randomUUID();
+    
+    activeConnections.set(connectionId, { ws, isAdmin: false });
+    
+    ws.on('message', async (message: string) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('Received message:', data);
+        
+        switch (data.type) {
+          case 'authenticate':
+            const connection = activeConnections.get(connectionId);
+            if (connection) {
+              connection.userId = data.userId;
+              connection.isAdmin = data.isAdmin || false;
+              activeConnections.set(connectionId, connection);
+              
+              ws.send(JSON.stringify({
+                type: 'authenticated',
+                userId: data.userId,
+                timestamp: new Date().toISOString(),
+              }));
+            }
+            break;
+            
+          case 'chat_message':
+            const conn = activeConnections.get(connectionId);
+            if (conn && conn.userId) {
+              try {
+                const chatMessage = await storage.saveChatMessage({
+                  sessionId: data.sessionId || crypto.randomUUID(),
+                  userId: conn.userId,
+                  isCustomer: !conn.isAdmin,
+                  message: data.message,
+                  messageType: 'text',
+                });
+                
+                const responseMessage = {
+                  type: 'chat_message',
+                  id: chatMessage.id,
+                  message: data.message,
+                  userId: conn.userId,
+                  isCustomer: !conn.isAdmin,
+                  timestamp: chatMessage.timestamp,
+                  sessionId: chatMessage.sessionId
+                };
+                
+                if (!conn.isAdmin) {
+                  for (const [id, connection] of activeConnections.entries()) {
+                    if (connection.isAdmin && connection.ws.readyState === WebSocket.OPEN) {
+                      connection.ws.send(JSON.stringify(responseMessage));
+                    }
+                  }
+                } else {
+                  for (const [id, connection] of activeConnections.entries()) {
+                    if (!connection.isAdmin && connection.ws.readyState === WebSocket.OPEN) {
+                      connection.ws.send(JSON.stringify(responseMessage));
+                    }
+                  }
+                }
+                
+                ws.send(JSON.stringify(responseMessage));
+                
+              } catch (error) {
+                console.error('Error saving chat message:', error);
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'Failed to send message',
+                  timestamp: new Date().toISOString(),
+                }));
+              }
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('Error parsing message:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      console.log('WebSocket connection closed');
+      activeConnections.delete(connectionId);
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      activeConnections.delete(connectionId);
+    });
+  });
+
+  // Store references for use in routes
+  (app as any).activeConnections = activeConnections;
   
   return httpServer;
 }

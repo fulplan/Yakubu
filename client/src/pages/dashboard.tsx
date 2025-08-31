@@ -57,7 +57,7 @@ export default function Dashboard() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab && ['portfolio', 'consignments', 'certificates', 'inheritance', 'tracking', 'notifications', 'claims', 'ownership-requests'].includes(tab)) {
+    if (tab && ['portfolio', 'consignments', 'certificates', 'inheritance', 'tracking', 'notifications', 'claims', 'ownership-requests', 'support'].includes(tab)) {
       setActiveTab(tab);
       // Clean up URL without triggering page reload
       window.history.replaceState({}, '', window.location.pathname);
