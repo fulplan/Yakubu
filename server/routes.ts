@@ -1316,6 +1316,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer chat messages for support tickets
+  app.get('/api/chat/ticket/:ticketId', isAuthenticated, async (req: any, res) => {
+    try {
+      const messages = await storage.getChatMessagesByTicket(req.params.ticketId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching ticket chat messages:", error);
+      res.status(500).json({ message: "Failed to fetch ticket chat messages" });
+    }
+  });
+
   // Tracking API Routes
 
   // Public tracking (no auth required)
