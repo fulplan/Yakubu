@@ -305,10 +305,13 @@ export default function ChatSupport() {
                     }`}>
                       <p className="text-sm">{msg.message}</p>
                       <p className="text-xs mt-1 opacity-70">
-                        {new Date(msg.timestamp).toLocaleTimeString('en-US', { 
-                          hour: 'numeric', 
-                          minute: '2-digit' 
-                        })}
+                        {msg.timestamp && !isNaN(new Date(msg.timestamp).getTime()) ? 
+                          new Date(msg.timestamp).toLocaleTimeString('en-US', { 
+                            hour: 'numeric', 
+                            minute: '2-digit' 
+                          }) : 
+                          'Just now'
+                        }
                       </p>
                     </div>
                   </div>

@@ -286,12 +286,16 @@ export default function SupportDashboard() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex-1">
           <h1 className="text-3xl font-bold">Support Center</h1>
           <p className="text-muted-foreground">Manage your support tickets and get help</p>
         </div>
-        <Button onClick={() => setShowNewTicketForm(true)} data-testid="button-new-ticket">
+        <Button 
+          onClick={() => setShowNewTicketForm(true)} 
+          data-testid="button-new-ticket"
+          className="w-full sm:w-auto mobile-optimized"
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Ticket
         </Button>

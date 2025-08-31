@@ -1,0 +1,164 @@
+Perfect 👌 I’ll restructure it into a developer-friendly ticket format (similar to Jira/GitHub issues). Each bug will be its own ticket with Title, Description, Steps to Reproduce, Actual Behavior, Expected Behavior.
+
+⸻
+
+🐞 Website Bug Tickets
+
+⸻
+
+Ticket 1: Irrelevant Navigation Showing in Customer Dashboard
+
+Description:
+When customers log in and access support tickets, the top nav bar still shows public site links (Home, Services, Pricing, Tracking, About, Login, Get Started).
+
+Steps to Reproduce:
+	1.	Log in as a customer.
+	2.	Go to Dashboard → Support Ticket.
+	3.	Check the top nav bar.
+
+Actual Behavior:
+Public website navigation items are still visible inside the customer dashboard.
+
+Expected Behavior:
+Customer dashboard should only display dashboard-related navigation, not the main site menu.
+
+⸻
+
+Ticket 2: Duplicate Back Navigation in Support Ticket
+
+Description:
+Inside a support ticket, two sets of breadcrumbs/back navigation appear.
+
+Steps to Reproduce:
+	1.	Log in as a customer.
+	2.	Go to Dashboard → Support Ticket → Open a Ticket.
+	3.	Look above the ticket details.
+
+Actual Behavior:
+	•	Two identical breadcrumbs are displayed: “Back → Support Ticket → Ticket Number.”
+
+Expected Behavior:
+	•	Only one breadcrumb should be shown.
+
+⸻
+
+Ticket 3: Invalid Date in Live Chat Messages (Customer Side)
+
+Description:
+Chat messages inside customer live chat display “Invalid Date.”
+
+Steps to Reproduce:
+	1.	Log in as a customer.
+	2.	Open Live Chat under support ticket.
+	3.	View the timestamps.
+
+Actual Behavior:
+Message timestamps show “Invalid Date.”
+
+Expected Behavior:
+Each message should show correct date & time.
+
+⸻
+
+Ticket 4: Misaligned “Create New Ticket” Button (Mobile View)
+
+Description:
+The “Create New Ticket” button is shifted far to the right on mobile screens, requiring horizontal scrolling.
+
+Steps to Reproduce:
+	1.	Log in as a customer on mobile.
+	2.	Scroll to the bottom of the support ticket page.
+
+Actual Behavior:
+Button alignment is broken; not properly responsive.
+
+Expected Behavior:
+Button should be left-aligned or center-aligned and visible without horizontal scroll.
+
+⸻
+
+Ticket 5: Footer Displaying Inside Dashboard
+
+Description:
+A footer is shown inside the customer dashboard view.
+
+Steps to Reproduce:
+	1.	Log in as a customer.
+	2.	Navigate inside dashboard pages.
+
+Actual Behavior:
+Footer is visible inside the dashboard.
+
+Expected Behavior:
+Dashboard should not include the public website footer (especially in mobile layout).
+
+⸻
+
+Ticket 6: Admin Ticket Responses Not Updating on Customer Side
+
+Description:
+When admin sends a response (Acknowledge, Request Info, Resolve), it shows as successful but does not reflect on the customer’s view.
+
+Steps to Reproduce:
+	1.	Log in as an admin.
+	2.	Open any support ticket.
+	3.	Choose Acknowledge, Request Info, or Resolve.
+	4.	Click Send Response.
+
+Actual Behavior:
+Success message shows but the customer does not see the update.
+
+Expected Behavior:
+Customer should see the admin’s response immediately.
+
+⸻
+
+Ticket 7: Admin Live Chat Shows Mock-Up Data
+
+Description:
+When admin opens live chat, mock-up data is displayed instead of real chat history.
+
+Steps to Reproduce:
+	1.	Log in as an admin.
+	2.	Open Live Chat on a ticket.
+
+Actual Behavior:
+Fake/mock-up chat history is shown.
+
+Expected Behavior:
+Real conversation history from the customer should be displayed.
+
+⸻
+
+Ticket 8: Typing Indicator Bug in Live Chat
+
+Description:
+The system shows “Customer is typing” even when the customer is not typing.
+
+Steps to Reproduce:
+	1.	Log in as an admin.
+	2.	Open a live chat with a customer.
+
+Actual Behavior:
+Typing indicator is always visible.
+
+Expected Behavior:
+Typing indicator should only appear when the customer is actively typing.
+
+⸻
+
+Ticket 9: End Chat Feature Not Working (Admin Side)
+
+Description:
+The “End Chat” option for admin does not function.
+
+Steps to Reproduce:
+	1.	Log in as an admin.
+	2.	Open a live chat with a customer.
+	3.	Click End Chat.
+
+Actual Behavior:
+Nothing happens.
+
+Expected Behavior:
+Chat session should close and mark as ended.

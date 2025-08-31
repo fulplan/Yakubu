@@ -776,6 +776,7 @@ export default function Admin() {
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationUsers, setNotificationUsers] = useState<string[]>([]);
   const [ticketChatMessages, setTicketChatMessages] = useState<any[]>([]);
+  const [isTypingIndicator, setIsTypingIndicator] = useState(false);
   const [resolveDialog, setResolveDialog] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState("");
 
@@ -819,6 +820,13 @@ export default function Admin() {
     queryKey: ["/api/admin/support-tickets"],
     enabled: !!user,
   }) as { data: any[], isLoading: boolean };
+
+  // Fetch ticket chat messages when a ticket is selected
+  const { data: ticketMessages = [], refetch: refetchTicketMessages } = useQuery({
+    queryKey: ["/api/admin/chat/ticket", activeChatUser?.id],
+    enabled: !!activeChatUser?.id && chatDialog,
+    refetchInterval: chatDialog ? 3000 : false, // Poll every 3 seconds when chat is open
+  }) as { data: any[], refetch: () => void };
 
   const { data: adminNotifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ["/api/admin/notifications"],
@@ -1156,10 +1164,12 @@ export default function Admin() {
     },
     onSuccess: () => {
       setChatMessage("");
-      // Refresh chat messages for the ticket
-      if (selectedTicket?.chatSessionId) {
-        loadTicketChatMessages(selectedTicket.chatSessionId);
-      }
+      // Refresh chat messages using react-query
+      refetchTicketMessages();
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent to the customer.",
+      });
     },
     onError: (error: any) => {
       toast({
@@ -3112,41 +3122,47 @@ export default function Admin() {
               {/* Chat Messages */}
               <div className="h-[300px] overflow-y-auto border rounded-lg p-4 bg-background">
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
+                  {ticketMessages.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No messages yet. Start the conversation!</p>
                     </div>
-                    <div className="flex-1">
-                      <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg max-w-sm">
-                        <p className="text-sm">{activeChatUser?.lastMessage}</p>
-                        <span className="text-xs text-muted-foreground">Customer • {activeChatUser?.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3 justify-end">
-                    <div className="flex-1">
-                      <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-sm ml-auto">
-                        <p className="text-sm">Thank you for reaching out. I'm here to help with your inquiry. Let me look into this right away.</p>
-                        <span className="text-xs opacity-80">Admin • Just now</span>
-                      </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                      <UserCog className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg max-w-sm">
-                        <p className="text-sm">Great, thanks! I really need this resolved quickly.</p>
-                        <span className="text-xs text-muted-foreground">Customer • Just now</span>
-                      </div>
-                    </div>
-                  </div>
+                  ) : (
+                    ticketMessages.map((msg: any) => {
+                      const messageTime = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Unknown time';
+                      
+                      return (
+                        <div key={msg.id} className={`flex items-start gap-3 ${msg.isCustomer ? '' : 'justify-end'}`}>
+                          {msg.isCustomer && (
+                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                              <User className="h-4 w-4 text-white" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className={`p-3 rounded-lg max-w-sm ${
+                              msg.isCustomer 
+                                ? 'bg-blue-100 dark:bg-blue-900/30' 
+                                : 'bg-primary text-primary-foreground ml-auto'
+                            }`}>
+                              <p className="text-sm">{msg.message}</p>
+                              <span className={`text-xs ${
+                                msg.isCustomer 
+                                  ? 'text-muted-foreground' 
+                                  : 'opacity-80'
+                              }`}>
+                                {msg.isCustomer ? 'Customer' : 'Admin'} • {messageTime}
+                              </span>
+                            </div>
+                          </div>
+                          {!msg.isCustomer && (
+                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                              <UserCog className="h-4 w-4 text-primary-foreground" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -3186,7 +3202,7 @@ export default function Admin() {
               </div>
 
               <div className="flex justify-between items-center text-sm text-muted-foreground">
-                <span>Customer typing...</span>
+                <span>{isTypingIndicator ? 'Customer typing...' : ''}</span>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" data-testid="button-call-customer">
                     <PhoneCall className="h-4 w-4 mr-1" />
@@ -3195,7 +3211,15 @@ export default function Admin() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setChatDialog(false)}
+                    onClick={() => {
+                      setChatDialog(false);
+                      setActiveChatUser(null);
+                      setIsTypingIndicator(false);
+                      toast({
+                        title: "Chat Ended",
+                        description: "Chat session has been ended successfully.",
+                      });
+                    }}
                     data-testid="button-end-chat"
                   >
                     End Chat

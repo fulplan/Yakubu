@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 // Removed isUnauthorizedError import as auth is handled by ProtectedRoute
 import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1827,10 +1826,6 @@ export default function Dashboard() {
         </Tabs>
       </div>
 
-      {/* Desktop Footer */}
-      <div className="hidden md:block">
-        <Footer />
-      </div>
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />

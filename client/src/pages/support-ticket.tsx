@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MessageSquare, Clock, User, Send, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 import MobileBackNav from "@/components/MobileBackNav";
 import { useLocation } from "wouter";
 
@@ -106,7 +105,7 @@ export default function SupportTicket() {
             <Button onClick={() => setLocation("/auth")}>Log In</Button>
           </div>
         </main>
-        <Footer />
+
       </div>
     );
   }
@@ -124,7 +123,7 @@ export default function SupportTicket() {
             <p>Loading support ticket...</p>
           </div>
         </main>
-        <Footer />
+
       </div>
     );
   }
@@ -162,7 +161,7 @@ export default function SupportTicket() {
             </CardContent>
           </Card>
         </main>
-        <Footer />
+
       </div>
     );
   }
@@ -212,8 +211,8 @@ export default function SupportTicket() {
       />
       
       <main className="max-w-4xl mx-auto px-4 py-8 mobile-padding">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        {/* Header - Desktop Only */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
           <Button 
             variant="outline" 
             size="sm" 
@@ -227,6 +226,12 @@ export default function SupportTicket() {
             <h1 className="text-3xl font-bold">Support Ticket</h1>
             <p className="text-muted-foreground">Ticket #{ticket.id.slice(0, 8)}</p>
           </div>
+        </div>
+
+        {/* Mobile Header */}
+        <div className="md:hidden mb-6">
+          <h1 className="text-2xl font-bold">Support Ticket</h1>
+          <p className="text-muted-foreground">Ticket #{ticket.id.slice(0, 8)}</p>
         </div>
 
         {/* Ticket Details */}
@@ -333,7 +338,10 @@ export default function SupportTicket() {
                               {message.isCustomer ? 'You' : 'Support Agent'}
                             </span>
                             <span className="text-xs opacity-70">
-                              {new Date(message.createdAt).toLocaleString()}
+                              {message.createdAt && !isNaN(new Date(message.createdAt).getTime()) ? 
+                                new Date(message.createdAt).toLocaleString() : 
+                                'Just now'
+                              }
                             </span>
                           </div>
                           <p className="text-sm whitespace-pre-wrap">{message.message}</p>
