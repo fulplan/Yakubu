@@ -17,7 +17,7 @@ import { Loader2, AlertTriangle, HelpCircle, Bug, CreditCard, Shield, FileText }
 const ticketSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters"),
   category: z.string().min(1, "Please select a category"),
-  priority: z.enum(["low", "normal", "high", "urgent"]),
+  priority: z.enum(["low", "medium", "high", "urgent"]),
   description: z.string().min(20, "Description must be at least 20 characters"),
   customerEmail: z.string().email("Valid email required").optional(),
   customerName: z.string().min(2, "Name must be at least 2 characters").optional(),
@@ -36,7 +36,7 @@ const categories = [
 
 const priorities = [
   { value: "low", label: "Low", color: "bg-green-100 text-green-800" },
-  { value: "normal", label: "Normal", color: "bg-blue-100 text-blue-800" },
+  { value: "medium", label: "Medium", color: "bg-blue-100 text-blue-800" },
   { value: "high", label: "High", color: "bg-orange-100 text-orange-800" },
   { value: "urgent", label: "Urgent", color: "bg-red-100 text-red-800" },
 ];
@@ -57,7 +57,7 @@ export default function SupportTicketForm({ onSuccess, initialData, guestMode = 
     defaultValues: {
       subject: initialData?.subject || "",
       category: initialData?.category || "",
-      priority: initialData?.priority || "normal",
+      priority: initialData?.priority || "medium",
       description: initialData?.description || "",
       customerEmail: initialData?.customerEmail || "",
       customerName: initialData?.customerName || "",
@@ -66,7 +66,7 @@ export default function SupportTicketForm({ onSuccess, initialData, guestMode = 
 
   const createTicketMutation = useMutation({
     mutationFn: async (data: TicketFormData) => {
-      const response = await apiRequest("POST", "/api/support/tickets", data);
+      const response = await apiRequest("POST", "/api/support-tickets", data);
       if (!response.ok) {
         throw new Error("Failed to create support ticket");
       }
@@ -77,7 +77,7 @@ export default function SupportTicketForm({ onSuccess, initialData, guestMode = 
         title: "Support Ticket Created",
         description: `Your ticket #${ticket.ticketNumber} has been submitted. We'll respond within 24 hours.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/support/tickets/mine"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/support-tickets/mine"] });
       form.reset();
       onSuccess?.(ticket);
     },
