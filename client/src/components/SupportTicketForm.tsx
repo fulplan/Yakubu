@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, AlertTriangle, HelpCircle, Bug, CreditCard, Shield, FileText } from "lucide-react";
 
@@ -50,6 +51,7 @@ interface SupportTicketFormProps {
 export default function SupportTicketForm({ onSuccess, initialData, guestMode = false }: SupportTicketFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const form = useForm<TicketFormData>({
@@ -66,7 +68,15 @@ export default function SupportTicketForm({ onSuccess, initialData, guestMode = 
 
   const createTicketMutation = useMutation({
     mutationFn: async (data: TicketFormData) => {
-      const response = await apiRequest("POST", "/api/support-tickets", data);
+      // Ensure we always send customer info, either from user or form
+      const payload = {
+        ...data,
+        customerEmail: guestMode ? data.customerEmail : (user?.email || data.customerEmail || ""),
+        customerName: guestMode ? data.customerName : (`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || data.customerName || "Anonymous User"),
+        customerId: guestMode ? undefined : user?.id
+      };
+      
+      const response = await apiRequest("POST", "/api/support-tickets", payload);
       if (!response.ok) {
         throw new Error("Failed to create support ticket");
       }
