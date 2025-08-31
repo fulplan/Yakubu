@@ -31,183 +31,176 @@ export default function ChatSupport() {
     retry: false,
   }) as { data: any };
 
-  // WebSocket connection
+  // Initialize chat when opened
   useEffect(() => {
-    if (isOpen && !wsRef.current) {
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
-      
-      try {
-        wsRef.current = new WebSocket(wsUrl);
-        
-        wsRef.current.onopen = () => {
-          console.log('WebSocket connected');
-          setIsConnected(true);
-          
-          // Authenticate if user is logged in
-          if (user?.id && wsRef.current) {
-            wsRef.current.send(JSON.stringify({
-              type: 'authenticate',
-              userId: user.id,
-              isAdmin: user.role === 'admin'
-            }));
-          }
-        };
-        
-        wsRef.current.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            
-            switch (data.type) {
-              case 'authenticated':
-                console.log('Authenticated with server');
-                // Send initial greeting
-                setMessages([{
-                  id: 'greeting',
-                  message: "Hello! I'm here to help you with your gold investment questions. How can I assist you today?",
-                  isCustomer: false,
-                  timestamp: new Date().toISOString(),
-                  sessionId: 'system'
-                }]);
-                break;
-                
-              case 'chat_message':
-                setMessages(prev => [...prev, {
-                  id: data.id,
-                  message: data.message,
-                  isCustomer: data.isCustomer,
-                  timestamp: data.timestamp,
-                  sessionId: data.sessionId
-                }]);
-                setIsTyping(false);
-                break;
-                
-              case 'error':
-                toast({
-                  title: "Chat Error",
-                  description: data.message,
-                  variant: "destructive",
-                });
-                break;
-            }
-          } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
-          }
-        };
-        
-        wsRef.current.onclose = () => {
-          console.log('WebSocket disconnected');
-          setIsConnected(false);
-          wsRef.current = null;
-        };
-        
-        wsRef.current.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          setIsConnected(false);
-          toast({
-            title: "Connection Error",
-            description: "Unable to connect to chat service. Please try again.",
-            variant: "destructive",
-          });
-        };
-        
-      } catch (error) {
-        console.error('Error creating WebSocket:', error);
-        toast({
-          title: "Connection Error",
-          description: "Unable to establish chat connection.",
-          variant: "destructive",
-        });
-      }
+    if (isOpen && user) {
+      setIsConnected(true);
+      // Load existing support ticket or create one
+      loadOrCreateTicket();
     }
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-        setIsConnected(false);
+  }, [isOpen, user]);
+
+  const loadOrCreateTicket = async () => {
+    try {
+      // Try to get user's existing open ticket
+      const response = await apiRequest("GET", "/api/support-tickets/mine");
+      if (response.ok) {
+        const tickets = await response.json();
+        const openTicket = tickets.find((t: any) => t.status === 'open');
+        
+        if (openTicket) {
+          setSessionId(openTicket.id);
+          // Load messages for this ticket
+          const messagesResponse = await apiRequest("GET", `/api/chat/ticket/${openTicket.id}`);
+          if (messagesResponse.ok) {
+            const ticketMessages = await messagesResponse.json();
+            setMessages(ticketMessages.map((msg: any) => ({
+              id: msg.id,
+              message: msg.message,
+              isCustomer: msg.isCustomer,
+              timestamp: msg.timestamp,
+              sessionId: msg.sessionId
+            })));
+          }
+        } else {
+          // Show initial greeting
+          setMessages([{
+            id: 'greeting',
+            message: "Hello! I'm here to help you with your gold investment questions. How can I assist you today?",
+            isCustomer: false,
+            timestamp: new Date().toISOString(),
+            sessionId: 'system'
+          }]);
+        }
       }
-    };
-  }, [isOpen, user, toast]);
+    } catch (error) {
+      console.error('Error loading chat:', error);
+      setMessages([{
+        id: 'greeting',
+        message: "Hello! I'm here to help you with your gold investment questions. How can I assist you today?",
+        isCustomer: false,
+        timestamp: new Date().toISOString(),
+        sessionId: 'system'
+      }]);
+    }
+  };
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Poll for new messages when there's an active session
+  useEffect(() => {
+    if (!sessionId || !isOpen) return;
+    
+    const pollMessages = async () => {
+      try {
+        const response = await apiRequest("GET", `/api/chat/ticket/${sessionId}`);
+        if (response.ok) {
+          const ticketMessages = await response.json();
+          const formattedMessages = ticketMessages.map((msg: any) => ({
+            id: msg.id,
+            message: msg.message,
+            isCustomer: msg.isCustomer,
+            timestamp: msg.timestamp,
+            sessionId: msg.sessionId
+          }));
+          
+          // Only update if messages changed
+          setMessages(prev => {
+            if (prev.length !== formattedMessages.length) {
+              setIsTyping(false); // Turn off typing when new message arrives
+              return formattedMessages;
+            }
+            return prev;
+          });
+        }
+      } catch (error) {
+        console.error('Error polling messages:', error);
+      }
+    };
+
+    const interval = setInterval(pollMessages, 3000); // Poll every 3 seconds
+    return () => clearInterval(interval);
+  }, [sessionId, isOpen]);
+
   const toggleChat = () => {
     setIsOpen(!isOpen);
   };
 
   const sendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !user) return;
     
     const messageText = message.trim();
     setMessage("");
     
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      // Send via WebSocket
-      wsRef.current.send(JSON.stringify({
-        type: 'chat_message',
-        message: messageText,
-        sessionId: sessionId || crypto.randomUUID()
-      }));
+    try {
+      let ticketId = sessionId;
       
-      // Add message immediately to UI
+      // Create ticket if none exists
+      if (!ticketId) {
+        const ticketResponse = await apiRequest("POST", "/api/support-tickets", {
+          subject: "Live Chat Support",
+          description: messageText,
+          category: "general",
+          priority: "medium",
+          customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+          customerEmail: user.email,
+          customerId: user.id
+        });
+        
+        if (ticketResponse.ok) {
+          const ticket = await ticketResponse.json();
+          ticketId = ticket.id;
+          setSessionId(ticketId);
+        } else {
+          throw new Error("Failed to create support ticket");
+        }
+      } else {
+        // Send message to existing ticket
+        const messageResponse = await apiRequest("POST", `/api/chat/ticket/${ticketId}/message`, {
+          message: messageText
+        });
+        
+        if (!messageResponse.ok) {
+          throw new Error("Failed to send message");
+        }
+      }
+      
+      // Add message to UI immediately
       const newMessage: ChatMessage = {
         id: crypto.randomUUID(),
         message: messageText,
         isCustomer: true,
         timestamp: new Date().toISOString(),
-        sessionId: sessionId || crypto.randomUUID()
+        sessionId: ticketId || ''
       };
       
       setMessages(prev => [...prev, newMessage]);
       setIsTyping(true);
       
-    } else {
-      // Fallback to HTTP if WebSocket is not available
-      try {
-        const response = await apiRequest("POST", "/api/support/sessions", {
-          customerEmail: user?.email || "anonymous@example.com",
-          customerName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : "Anonymous User",
-          metadata: { source: 'chat_widget' }
-        });
-        
-        if (response.ok) {
-          const session = await response.json();
-          setSessionId(session.id);
-          
-          // Add message to UI
-          const newMessage: ChatMessage = {
+      // Auto-response for first message
+      if (!sessionId) {
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
             id: crypto.randomUUID(),
-            message: messageText,
-            isCustomer: true,
+            message: "Thank you for contacting us! I've received your message and our support team will respond shortly. Your ticket number is #" + (ticketId?.slice(-8) || ''),
+            isCustomer: false,
             timestamp: new Date().toISOString(),
-            sessionId: session.id
-          };
-          
-          setMessages(prev => [...prev, newMessage]);
-          
-          // Simulate support response
-          setTimeout(() => {
-            setMessages(prev => [...prev, {
-              id: crypto.randomUUID(),
-              message: "Thank you for contacting us! A support specialist will respond to you shortly. In the meantime, you might find our help center useful.",
-              isCustomer: false,
-              timestamp: new Date().toISOString(),
-              sessionId: session.id
-            }]);
-          }, 1000);
-        }
-      } catch (error) {
-        console.error('Error sending message:', error);
-        toast({
-          title: "Error",
-          description: "Failed to send message. Please try again.",
-          variant: "destructive",
-        });
+            sessionId: ticketId || ''
+          }]);
+          setIsTyping(false);
+        }, 1500);
       }
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
